@@ -59,3 +59,16 @@ aviso de **RESOLVIDO** (exceto F1, que é sintético).
   segurança exigiria hardware ou partição de teste.
 - F2 e F3 param, por alguns minutos, serviços de uso do dono (crypto-analyst e painel-servidor),
   com o consentimento dele.
+
+## Emenda 1 — rodada 2 (2026-10-22, antes de executar)
+
+Na rodada 1 ([resultado](0001-resultados.md)), F5, F6 e F7 ficaram **inválidos**: um alerta real e
+alheio ao teste (`DiscoEncolhendo` no Pi) manteve o Alertmanager com alerta ativo, e o instrumento só
+iniciava cenário com o Alertmanager vazio.
+
+- **Correção do instrumento:** a checagem inicial considera só alertas que as injeções podem gerar
+  (`MaquinaFora`, `ServicoHttpFora`, `ServicoSystemdParado`, `MetricasGpuParadas`, `GpuSemDriver`).
+- **Rodada 2:** executa **somente F5, F6 e F7**, com os mesmos limites e termos desta página.
+  F1–F4 não são repetidos; o M6 da rodada 1 (falhado) não é refeito nem substituído.
+- **M6 na rodada 2:** nenhum evento `execucao` durante a rodada 2.
+- Nada mais muda: cenários, limites, termos e critérios são os originais.

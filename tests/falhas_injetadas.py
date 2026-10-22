@@ -83,10 +83,15 @@ def casa(c, texto, resolvido=False):
     return c["casa"] in primeira and not (c.get("nao_casa") and c["nao_casa"] in primeira)
 
 
+# Emenda 1 (rodada 2): só estes alertas podem ser efeito das injeções; os demais são alheios ao teste.
+ALERTAS_DO_TESTE = {"MaquinaFora", "ServicoHttpFora", "ServicoSystemdParado", "MetricasGpuParadas", "GpuSemDriver"}
+
+
 def alertas_ativos():
     try:
         with urllib.request.urlopen(ALERTMANAGER, timeout=10) as r:
-            return [a["labels"].get("alertname") for a in json.load(r)]
+            return [a["labels"].get("alertname") for a in json.load(r)
+                    if a["labels"].get("alertname") in ALERTAS_DO_TESTE]
     except OSError:
         return ["(alertmanager inacessível)"]
 
@@ -154,6 +159,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--saida")
+    ap.add_argument("--cenarios", help="lista separada por vírgula (emenda 1: rodada 2 só com F5,F6,F7)")
     a = ap.parse_args()
     if a.smoke:  # valida leitura de avisos, casamento e avaliação, sem falha real
         t0 = time.time()
@@ -174,7 +180,8 @@ def main():
         return
     exec_antes = sum(1 for x in ler_jsonl("acoes.jsonl") if x.get("evento") == "execucao")
     inicio = time.strftime("%Y-%m-%dT%H:%M:%S")
-    resultados = [rodar_cenario(c) for c in CENARIOS]
+    escolhidos = set(a.cenarios.split(",")) if a.cenarios else {c["id"] for c in CENARIOS}
+    resultados = [rodar_cenario(c) for c in CENARIOS if c["id"] in escolhidos]
     exec_depois = sum(1 for x in ler_jsonl("acoes.jsonl") if x.get("evento") == "execucao")
     final = {"inicio": inicio, "fim": time.strftime("%Y-%m-%dT%H:%M:%S"),
              "M6_execucoes_durante_teste": exec_depois - exec_antes, "cenarios": resultados}
