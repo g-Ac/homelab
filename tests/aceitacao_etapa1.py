@@ -6,6 +6,7 @@ Uso:
 
 --fallback  remove temporariamente a tag do gemma4 no Ollama para provar o fallback (restaura no fim)
 --overhead  mede o tempo extra do gateway (critério na issue #12)
+--queda     para o container do Ollama para provar o failover para a nuvem e a falha fechada (religa no fim)
 
 Saída: uma linha por verificação (PASSA / FALHA / PULADO) e código de saída 1 se algo falhar.
 """
@@ -76,6 +77,7 @@ def main():
     ap.add_argument("--env", default="~/stacks/bifrost/.env")
     ap.add_argument("--fallback", action="store_true")
     ap.add_argument("--overhead", action="store_true")
+    ap.add_argument("--queda", action="store_true")
     a = ap.parse_args()
     env = ler_env(a.env)
     inicio = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
@@ -144,9 +146,45 @@ def main():
     com_custo = bool(logs) and all((l.get("cost") or 0) > 0 for l in logs)
     registrar("logs registram custo-sombra", com_custo)
 
-    # 6. Rota de nuvem (issue #10)
-    registrar("chave 'privado' recusada ao pedir modelo de nuvem", True, "aguarda #10", pulado=True)
-    registrar("Ollama fora: 'privado' falha fechado, 'geral' vai para a nuvem", True, "aguarda #10", pulado=True)
+    # 6. Rota de nuvem gratuita (issue #10)
+    for modelo in ("groq/qwen/qwen3.8-27b", "gemini/gemini-3.5-flash-lite"):
+        s, d, _ = chat(env["VK_PRIVADO"], modelo, reasoning_effort="none")
+        registrar(f"chave 'privado' recusada ao pedir {modelo.split('/')[0]}", s == 403, f"HTTP {s}: {erro(d)}")
+    for modelo in ("groq/qwen/qwen3.8-27b", "gemini/gemini-3.5-flash-lite"):
+        s, d, t = chat(env["VK_GERAL"], modelo, reasoning_effort="none")
+        registrar(f"chave 'geral' usa {modelo.split('/')[0]} com o contrato reasoning_effort='none'", s == 200,
+                  f"HTTP {s} em {t:.1f} s" + ("" if s == 200 else f": {erro(d)}"))
+    if a.queda:
+        subprocess.run(["docker", "stop", "ollama"], capture_output=True)
+        try:
+            s, d, t = chat(env["VK_GERAL"], "local", reasoning_effort="none")
+            registrar("Ollama parado: 'geral' continua respondendo pela nuvem",
+                      s == 200 and d.get("model") in ("qwen/qwen3.8-27b", "gemini-3.5-flash-lite"),
+                      f"HTTP {s}, modelo {d.get('model')}, {t:.1f} s")
+            s, d, t = chat(env["VK_PRIVADO"], "local", reasoning_effort="none")
+            registrar("Ollama parado: 'privado' falha fechado (não responde)", s >= 400, f"HTTP {s}")
+        finally:
+            subprocess.run(["docker", "start", "ollama"], capture_output=True)
+        time.sleep(3)
+        s, d, _ = http("GET", f"{GW}/api/logs?limit=30", headers={"Authorization": admin})
+        nuvem = [l for l in d.get("logs", []) if l.get("virtual_key_id") == "vk-privado"
+                 and l.get("provider") in ("groq", "gemini") and l.get("timestamp", "")[:19] >= inicio]
+        detalhes = [http("GET", f"{GW}/api/logs/{l['id']}", headers={"Authorization": admin})[1] for l in nuvem]
+        detalhes = [x.get("log", x) for x in detalhes]
+        barrado = bool(detalhes) and all((x.get("error_details") or {}).get("type") == "provider_blocked"
+                                         and not x.get("selected_key_name") and not x.get("token_usage")
+                                         for x in detalhes)
+        registrar("tentativas de nuvem da 'privado' barradas antes de sair (sem chave de provedor, sem tokens)",
+                  barrado, f"{len(detalhes)} tentativas auditadas no log")
+        for _ in range(10):  # espera o Ollama voltar a responder
+            s, d, _ = chat(env["VK_PRIVADO"], "local")
+            if s == 200:
+                break
+            time.sleep(3)
+        registrar("Ollama religado e 'privado' de volta ao local", s == 200 and d.get("model") == "gemma4:e4b",
+                  f"modelo {d.get('model')}")
+    else:
+        registrar("queda total do Ollama", True, "use --queda", pulado=True)
 
     # 7. Overhead do gateway
     if a.overhead:

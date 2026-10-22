@@ -34,6 +34,38 @@
         "max_retries": 1,
         "allow_private_network": true
       }
+    },
+    "groq": {
+      "keys": [
+        {
+          "name": "groq-free",
+          "value": "env.GROQ_API_KEY",
+          "models": [
+            "qwen/qwen3.8-27b"
+          ],
+          "weight": 1.0
+        }
+      ],
+      "network_config": {
+        "default_request_timeout_in_seconds": 60,
+        "max_retries": 1
+      }
+    },
+    "gemini": {
+      "keys": [
+        {
+          "name": "gemini-free",
+          "value": "env.GEMINI_API_KEY",
+          "models": [
+            "gemini-3.5-flash-lite"
+          ],
+          "weight": 1.0
+        }
+      ],
+      "network_config": {
+        "default_request_timeout_in_seconds": 60,
+        "max_retries": 1
+      }
     }
   },
   "governance": {
@@ -81,8 +113,29 @@
               "*"
             ],
             "weight": 1
+          },
+          {
+            "provider": "groq",
+            "allowed_models": [
+              "qwen/qwen3.8-27b"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          },
+          {
+            "provider": "gemini",
+            "allowed_models": [
+              "gemini-3.5-flash-lite"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
           }
-        ]
+        ],
+        "rate_limit_id": "rl-geral"
       },
       {
         "id": "vk-teste-orcamento",
@@ -129,7 +182,7 @@
     "routing_rules": [
       {
         "id": "alias-local",
-        "name": "Apelido 'local': gemma4 com fallback qwen (ADR 0003)",
+        "name": "Apelido 'local': gemma4 → qwen → Groq → Gemini (nuvem só para chaves que permitem)",
         "cel_expression": "model == 'local'",
         "priority": 10,
         "targets": [
@@ -140,7 +193,9 @@
           }
         ],
         "fallbacks": [
-          "ollama/qwen3.5:4b"
+          "ollama/qwen3.5:4b",
+          "groq/qwen/qwen3.8-27b",
+          "gemini/gemini-3.5-flash-lite"
         ]
       }
     ],
@@ -191,6 +246,11 @@
       {
         "id": "rl-teste",
         "request_max_limit": 3,
+        "request_reset_duration": "1m"
+      },
+      {
+        "id": "rl-geral",
+        "request_max_limit": 25,
         "request_reset_duration": "1m"
       }
     ]

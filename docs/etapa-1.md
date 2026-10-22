@@ -21,7 +21,7 @@ flowchart LR
         end
     end
 
-    NUVEM[("API de nuvem<br/>(#10, pendente)")]
+    NUVEM[("nuvem gratuita<br/>Groq → Gemini")]
 
     P1 -- "model: local" --> GW
     P2 -- "model: local" --> GW
@@ -42,17 +42,19 @@ curl http://<srv-na-tailscale>:8080/v1/chat/completions \
        "messages": [{"role": "user", "content": "Classifique este alerta: ..."}]}'
 ```
 
-- `model: "local"` é um **apelido**: o gateway decide o modelo (hoje gemma4, com fallback no qwen).
+- `model: "local"` é um **apelido**: o gateway decide o modelo. Cadeia: gemma4 → qwen3.5 local →
+  qwen3.8-27b na Groq → Gemini Flash-Lite. A chave decide até onde a cadeia pode ir.
   Trocar de modelo, ou de GPU, não muda nada no projeto.
 - `reasoning_effort: "none"` é **contrato** para tarefas simples. Sem ele, o qwen liga o modo
-  "pensar" e fica 20–30× mais lento (ver #13).
+  "pensar" e fica 20–30× mais lento (ver #13). Todos os modelos da cadeia aceitam esse valor
+  ([ADR 0005](decisoes/0005-rota-nuvem-gratuita.md)).
 
 ## Chaves
 
 | Chave | Pode usar | Limites | Conteúdo no log |
 |---|---|---|---|
 | `privado` | só modelos locais | 600 req/h | **não** |
-| `geral` | modelos locais (nuvem quando houver) | US$ 5/mês | não (padrão global) |
+| `geral` | local + Groq + Gemini (gratuitos) | US$ 5/mês, 25 req/min | não (padrão global) |
 | `teste-orcamento` | só locais | US$ 0,0005/h | não |
 | `teste-limite` | só locais | 3 req/min | não |
 
@@ -73,11 +75,12 @@ o número no painel é **quanto o mesmo uso custaria na nuvem**. Não é gasto r
 - Inferência e painel exigem autenticação.
 - O Bifrost bloqueia por padrão conexões a IPs privados (proteção anti-SSRF). A exceção foi
   aberta **só** para o provider do Ollama.
-- O Bifrost baixa uma tabela pública de preços a cada 24 h: única saída de rede esperada sem rota de nuvem.
+- Saídas de rede esperadas: tabela pública de preços do Bifrost (a cada 24 h), Groq e Gemini (só chave `geral`).
+- A rota gratuita **pode treinar com os dados** (Gemini declara isso, e humanos podem revisar). Decisão aceita para o lab; dado pessoal ou confidencial não passa por ela, por termo do provedor.
 
 ## Resultado do teste de aceitação
 
-[`tests/aceitacao_etapa1.py`](../tests/aceitacao_etapa1.py), rodado no srv em 2026-10-22:
+[`tests/aceitacao_etapa1.py`](../tests/aceitacao_etapa1.py) `--fallback --overhead --queda`, rodado no srv em 2026-10-22:
 
 ```text
 [PASSA ] inferência sem chave é recusada — HTTP 401
@@ -85,23 +88,29 @@ o número no painel é **quanto o mesmo uso custaria na nuvem**. Não é gasto r
 [PASSA ] API de gestão sem login é recusada — HTTP 401
 [PASSA ] API de gestão com login funciona — HTTP 200
 [PASSA ] chave 'privado' + apelido 'local' responde pelo gemma4 — HTTP 200, modelo gemma4:e4b
-[PASSA ] chave 'privado' não acessa modelo fora da lista (llama3.1:8b existe no Ollama) — HTTP 403
-[PASSA ] reasoning_effort='none' desliga o 'pensar' do qwen — 2 tokens de saída
+[PASSA ] chave 'privado' não acessa modelo fora da lista (llama3.1:8b existe no Ollama) — HTTP 403: Model 'llama3.1:8b' is not allowed for virtual key 'privado'
+[PASSA ] reasoning_effort='none' desliga o 'pensar' do qwen — 2 tokens de saída em 3.7 s
 [PASSA ] com o gemma4 fora, 'local' cai no qwen3.5:4b — HTTP 200, modelo qwen3.5:4b
 [PASSA ] gemma4 restaurado e de volta ao serviço — modelo gemma4:e4b
 [PASSA ] limite de 3 req/min bloqueia com 429 — códigos [200, 200, 200, 429, 429]
-[PASSA ] orçamento de US$ 0,0005/h bloqueia com 402
-[PASSA ] logs da chave 'privado' não guardam conteúdo
+[PASSA ] orçamento de US$ 0,0005/h bloqueia com 402 — 0 chamadas aceitas antes do bloqueio
+[PASSA ] logs da chave 'privado' não guardam conteúdo — 3 registros conferidos
 [PASSA ] logs registram custo-sombra
-[PULADO] chave 'privado' recusada ao pedir modelo de nuvem — aguarda #10
-[PULADO] Ollama fora: 'privado' falha fechado, 'geral' vai para a nuvem — aguarda #10
-[PASSA ] overhead mediano do gateway ≤ 50 ms — mediana 0.6 ms (p10 -0.2, p90 1.1; 30 pares)
+[PASSA ] chave 'privado' recusada ao pedir groq — HTTP 403: Provider 'groq' is not allowed for virtual key 'privado'
+[PASSA ] chave 'privado' recusada ao pedir gemini — HTTP 403: Provider 'gemini' is not allowed for virtual key 'privado'
+[PASSA ] chave 'geral' usa groq com o contrato reasoning_effort='none' — HTTP 200 em 0.4 s
+[PASSA ] chave 'geral' usa gemini com o contrato reasoning_effort='none' — HTTP 200 em 6.4 s
+[PASSA ] Ollama parado: 'geral' continua respondendo pela nuvem — HTTP 200, modelo qwen/qwen3.8-27b, 1.4 s
+[PASSA ] Ollama parado: 'privado' falha fechado (não responde) — HTTP 502
+[PASSA ] tentativas de nuvem da 'privado' barradas antes de sair (sem chave de provedor, sem tokens) — 4 tentativas auditadas no log
+[PASSA ] Ollama religado e 'privado' de volta ao local — modelo gemma4:e4b
+[PASSA ] overhead mediano do gateway ≤ 50 ms — mediana 0.7 ms (p10 0.1, p90 1.3; 30 pares)
 
-14 passaram, 0 falharam, 2 pulados
+22 passaram, 0 falharam, 0 pulados
 ```
 
-O fallback é testado com **falha real**: a tag do gemma4 é removida do Ollama durante o teste e
-restaurada no fim, sem novo download.
+O fallback é testado com **falha real**: a tag do gemma4 é removida do Ollama e restaurada no fim,
+e na queda total o container do Ollama é parado e religado.
 
 ## O que aprendemos
 
@@ -113,9 +122,16 @@ restaurada no fim, sem novo download.
   até uma chamada. Com dinheiro real, o limite deve ter folga.
 - **Overhead desprezível:** 0,6 ms de mediana, contra um critério de 50 ms definido antes de medir.
 
+## O que aprendemos (rota gratuita)
+
+- **Fallback global, permissão por chave:** a cadeia é a mesma para todos; a governança barra
+  provedores não permitidos **antes** de escolher chave de provedor, e isso fica auditável no log.
+- **`reasoning_effort` não é universal:** `none` funciona no Ollama e no qwen da Groq, quebra no
+  `gpt-oss` da Groq, e no Gemini só funciona porque o Bifrost traduz.
+- **Free tier é reserva, não caminho principal:** o Gemini levou ~6 s para responder "ok".
+
 ## Pendências
 
-- **#10** — rota de nuvem: depende de uma chave de API (assinaturas de Claude Code/Codex não servem
-  como backend de gateway: termos de consumidor e sem métrica de tokens). Antes de ligar, atualizar
-  o Bifrost para a v2.3.2 (correção de validação TLS).
 - **#13** — impor `reasoning_effort: none` no próprio gateway.
+- **#14** — atualizar o Bifrost para a v2.3.2 quando a quarentena terminar (23/10).
+- **#15** — rota paga (API do Claude) com termos comerciais.

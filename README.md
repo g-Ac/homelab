@@ -10,7 +10,7 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 - **Medir antes de construir.** Toda escolha relevante tem critério definido *antes* do teste
   e veredicto registrado depois (ver [`docs/decisoes/`](docs/decisoes/)).
 
-> Status: Etapa 0 concluída; **Etapa 1 — gateway** no ar com rota local (rota de nuvem pendente). O histórico completo está nas
+> Status: Etapa 0 concluída; **Etapa 1 — gateway** no ar com rota local e nuvem gratuita. O histórico completo está nas
 > [issues](../../issues?q=is%3Aissue) e [milestones](../../milestones).
 
 ## Resultados até agora
@@ -20,7 +20,7 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 | 🔒 **Hardening do servidor** | Nota Lynis **62 → 69**; achado: SSH exposto em IPv6 global sem firewall ([relatório](docs/seguranca/0001-hardening-srv.md)) |
 | 🔑 **Segredos vazados** | 21 repositórios varridos no histórico completo, **0 em públicos**, com controle positivo ([relatório](docs/seguranca/0002-varredura-segredos.md)) |
 | 🎮 **GPU** | Driver com Secure Boot ligado, sem acesso físico; GPU disponível em containers ([ADR 0002](docs/decisoes/0002-driver-nvidia-secure-boot.md)) |
-| 🚪 **Gateway de IA** | Bifrost com chave por projeto, fallback real, orçamento e logs sem conteúdo; 14/14 testes de aceitação; overhead de 0,6 ms. LiteLLM recusado por ataque de supply chain na véspera ([etapa 1](docs/etapa-1.md), [ADR 0004](docs/decisoes/0004-gateway-bifrost.md)) |
+| 🚪 **Gateway de IA** | Bifrost com chave por projeto, fallback local → nuvem gratuita, chave privada que falha fechado (auditado), orçamento e logs sem conteúdo; 22/22 testes de aceitação; overhead de 0,7 ms. LiteLLM recusado por ataque de supply chain na véspera ([etapa 1](docs/etapa-1.md), [ADR 0004](docs/decisoes/0004-gateway-bifrost.md)) |
 | 🧪 **Benchmark pré-registrado** | 4 modelos locais; 2 GO. Padrão `gemma4:e4b`: 96% em alertas, 97% em extração, 74 tokens/s. Modelos de 8–9B não cabem e não acertam mais ([resultados](docs/benchmarks/0001-resultados.md)) |
 
 ## Arquitetura
@@ -48,7 +48,7 @@ Detalhes em [`docs/arquitetura.md`](docs/arquitetura.md).
 | Etapa | Entrega | Status |
 |---|---|---|
 | **0 — Fundação** | Mapa do lab, segurança básica, GPU funcionando, benchmark de modelos locais | ✅ concluída |
-| **1 — Plataforma de IA privada** | Gateway único que roteia entre modelo local e API externa, com painel de custo/uso | 🟡 rota local pronta; nuvem pendente |
+| **1 — Plataforma de IA privada** | Gateway único que roteia entre modelo local e API externa, com painel de custo/uso | 🟡 local + nuvem gratuita prontos; rota paga futura |
 | **2 — Agente SRE** | Agente que investiga alertas da infra e pede aprovação humana no Telegram | ⚪ |
 | **3 — Solução aplicada** | Caso real de empresa em cima das etapas 1–2 | ⚪ |
 
