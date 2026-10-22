@@ -1,26 +1,32 @@
 {
   "$schema": "https://www.getbifrost.ai/schema",
   "encryption_key": "env.BIFROST_ENCRYPTION_KEY",
-
   "client": {
     "enforce_auth_on_inference": true,
     "enable_logging": true,
     "disable_content_logging": true,
     "allow_per_request_content_storage_override": false,
     "log_retention_days": 90,
-    "allowed_origins": ["http://localhost:8080", "http://127.0.0.1:8080"],
+    "allowed_origins": [
+      "http://localhost:8080",
+      "http://127.0.0.1:8080"
+    ],
     "max_request_body_size_mb": 10
   },
-
   "providers": {
     "ollama": {
       "keys": [
         {
           "name": "ollama-local",
           "value": "",
-          "models": ["gemma4:e4b", "qwen3.5:4b"],
+          "models": [
+            "gemma4:e4b",
+            "qwen3.5:4b"
+          ],
           "weight": 1.0,
-          "ollama_key_config": { "url": "http://ollama:11434" }
+          "ollama_key_config": {
+            "url": "http://ollama:11434"
+          }
         }
       ],
       "network_config": {
@@ -30,7 +36,6 @@
       }
     }
   },
-
   "governance": {
     "auth_config": {
       "is_enabled": true,
@@ -38,7 +43,6 @@
       "admin_password": "env.BIFROST_ADMIN_PASSWORD",
       "disable_auth_on_inference": false
     },
-
     "virtual_keys": [
       {
         "id": "vk-privado",
@@ -49,8 +53,13 @@
         "provider_configs": [
           {
             "provider": "ollama",
-            "allowed_models": ["gemma4:e4b", "qwen3.5:4b"],
-            "key_ids": ["*"],
+            "allowed_models": [
+              "gemma4:e4b",
+              "qwen3.5:4b"
+            ],
+            "key_ids": [
+              "*"
+            ],
             "weight": 1
           }
         ]
@@ -63,24 +72,49 @@
         "provider_configs": [
           {
             "provider": "ollama",
-            "allowed_models": ["gemma4:e4b", "qwen3.5:4b"],
-            "key_ids": ["*"],
+            "allowed_models": [
+              "gemma4:e4b",
+              "qwen3.5:4b"
+            ],
+            "key_ids": [
+              "*"
+            ],
             "weight": 1
           }
         ]
       }
+    ],
+    "routing_rules": [
+      {
+        "id": "alias-local",
+        "name": "Apelido 'local': gemma4 com fallback qwen (ADR 0003)",
+        "cel_expression": "model == 'local'",
+        "priority": 10,
+        "targets": [
+          {
+            "provider": "ollama",
+            "model": "gemma4:e4b",
+            "weight": 1.0
+          }
+        ],
+        "fallbacks": [
+          "ollama/qwen3.5:4b"
+        ]
+      }
     ]
   },
-
   "config_store": {
     "enabled": true,
     "type": "sqlite",
-    "config": { "path": "/app/data/store/config.db" }
+    "config": {
+      "path": "/app/data/store/config.db"
+    }
   },
-
   "logs_store": {
     "enabled": true,
     "type": "sqlite",
-    "config": { "path": "/app/data/store/logs.db" }
+    "config": {
+      "path": "/app/data/store/logs.db"
+    }
   }
 }
