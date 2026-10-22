@@ -1,0 +1,4 @@
+# /etc/default/earlyoom do Pi (homelab). Age quando a memória disponível < 10% E o swap (zram) livre < 25%.
+# Escolhe o processo de maior oom_score; serviços importantes têm OOMScoreAdjust=-900 (ver proteger-servicos.sh).
+# Preferência: testes em node/vitest. Nunca: sshd, systemd, tailscaled, monitoramento.
+EARLYOOM_ARGS="-m 10 -s 25 -r 3600 --prefer ^(node|vitest)$ --avoid ^(sshd|systemd|init|tailscaled|prometheus|alertmanager)$"
