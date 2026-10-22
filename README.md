@@ -13,6 +13,15 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 > Status: **Etapa 0 — Fundação** em andamento. O histórico completo está nas
 > [issues](../../issues?q=is%3Aissue) e [milestones](../../milestones).
 
+## Resultados até agora
+
+| | |
+|---|---|
+| 🔒 **Hardening do servidor** | Nota Lynis **62 → 69**; achado: SSH exposto em IPv6 global sem firewall ([relatório](docs/seguranca/0001-hardening-srv.md)) |
+| 🔑 **Segredos vazados** | 21 repositórios varridos no histórico completo, **0 em públicos**, com controle positivo ([relatório](docs/seguranca/0002-varredura-segredos.md)) |
+| 🎮 **GPU** | Driver com Secure Boot ligado, sem acesso físico; GPU disponível em containers ([ADR 0002](docs/decisoes/0002-driver-nvidia-secure-boot.md)) |
+| 🧪 **Benchmark pré-registrado** | 4 modelos locais; 2 GO. Padrão `gemma4:e4b`: 96% em alertas, 97% em extração, 74 tokens/s. Modelos de 8–9B não cabem e não acertam mais ([resultados](docs/benchmarks/0001-resultados.md)) |
+
 ## Arquitetura
 
 ```mermaid

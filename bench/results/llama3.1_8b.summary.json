@@ -1,0 +1,15 @@
+{
+  "model": "llama3.1:8b",
+  "t1_acertos": 22,
+  "t1_total": 24,
+  "t1_acuracia": 0.9167,
+  "t2_acertos": 53,
+  "t2_total": 60,
+  "t2_acuracia": 0.8833,
+  "t3_cobertura_media": 1.0,
+  "tokens_s_mediana_t3": 26.63,
+  "latencia_mediana_t1t2_s": 0.913,
+  "fracao_na_gpu": 0.8578,
+  "tamanho_carregado_gb": 5.63,
+  "go": false
+}

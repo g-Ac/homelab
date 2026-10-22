@@ -1,0 +1,15 @@
+{
+  "model": "qwen3.5:9b",
+  "t1_acertos": 23,
+  "t1_total": 24,
+  "t1_acuracia": 0.9583,
+  "t2_acertos": 56,
+  "t2_total": 60,
+  "t2_acuracia": 0.9333,
+  "t3_cobertura_media": 1.0,
+  "tokens_s_mediana_t3": 13.95,
+  "latencia_mediana_t1t2_s": 2.203,
+  "fracao_na_gpu": 0.6338,
+  "tamanho_carregado_gb": 6.25,
+  "go": false
+}

@@ -7,5 +7,3 @@ secrets/
 __pycache__/
 .venv/
 *.log
-bench/results/*
-!bench/results/.gitkeep
