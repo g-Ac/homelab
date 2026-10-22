@@ -52,6 +52,17 @@ groups:
           resumo: "Disco de {{ $labels.maquina }} deve encher em menos de 24 h"
           descricao: "Projeção linear das últimas 6 h indica disco cheio em menos de um dia."
 
+      - alert: PiPertoDeTravar
+        expr: |
+          (node_memory_MemAvailable_bytes{maquina="pi"} / node_memory_MemTotal_bytes{maquina="pi"} < 0.12)
+          and
+          (node_memory_SwapFree_bytes{maquina="pi"} / node_memory_SwapTotal_bytes{maquina="pi"} < 0.40)
+        for: 1m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "Pi perto de travar por falta de memória"
+          descricao: "Menos de 12% de memória disponível e swap (zram) mais de 60% cheio. Nesse estado o Pi já travou e foi reiniciado pelo watchdog (17/10, 20/10, 22/10)."
+
       - alert: MemoriaBaixa
         expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
         for: 10m

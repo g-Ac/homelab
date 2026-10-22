@@ -44,11 +44,12 @@ SERVICOS_SRV = {"crypto-analyst", "canario-amostra", "docker", "containerd", "fa
                 "ssh", "node_exporter", "gpu-metricas"}
 
 
-def rodar(argv, timeout=20):
-    """Executa um comando fixo (sem shell) e devolve a saída, cortada."""
+def rodar(argv, timeout=20, cortar=True):
+    """Executa um comando fixo (sem shell) e devolve a saída (cortada em começo + fim, salvo cortar=False)."""
     try:
         r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
-        return trecho((r.stdout + r.stderr).strip(), 1500, 1500)
+        saida = (r.stdout + r.stderr).strip()
+        return trecho(saida, 1500, 1500) if cortar else saida
     except subprocess.TimeoutExpired:
         return f"(tempo esgotado após {timeout}s)"
     except OSError as e:
@@ -72,8 +73,9 @@ def diag_pi(acao, alvo=None):
     if acao == "disco":
         return "\n".join([rodar(["df", "-h", "-x", "tmpfs", "-x", "devtmpfs"]), rodar(["journalctl", "--disk-usage"])])
     if acao == "memoria":
-        return "\n".join([rodar(["free", "-m"]),
-                          "\n".join(rodar(["ps", "-eo", "rss,pid,comm", "--sort=-rss"]).splitlines()[:10])])
+        linhas = rodar(["ps", "-eo", "rss,pid,etime,args", "--sort=-rss", "--no-headers"], cortar=False).splitlines()[:12]
+        top = [f"{int(l.split()[0]) // 1024:5d} MB  {' '.join(l.split()[1:])[:110]}" for l in linhas if l.split()[:1] and l.split()[0].isdigit()]
+        return "\n".join([rodar(["free", "-m"]), "## processos que mais usam memória (MB, pid, tempo, comando)", *top])
     return "(diagnóstico fora do catálogo)"
 
 
@@ -98,7 +100,7 @@ def coletar(alerta):
         evid.append(("resumo da máquina", diag_srv("resumo") if no_srv else diag_pi("resumo")))
     elif nome.startswith("Disco"):
         evid.append(("disco", diag_srv("disco") if no_srv else diag_pi("disco")))
-    elif nome == "MemoriaBaixa":
+    elif nome in ("MemoriaBaixa", "PiPertoDeTravar"):
         evid.append(("memória", diag_srv("resumo") if no_srv else diag_pi("memoria")))
     elif nome.startswith("Gpu") or nome == "MetricasGpuParadas":
         evid.append(("gpu", diag_srv("gpu")))
@@ -182,7 +184,12 @@ def montar(alerta, evid, explicacao, origem):
         t, s = evid[0]
         linhas = s.strip().splitlines()
         estado = [x.strip() for x in linhas if re.search(r"Active:|\| Up |\| Exited|Main PID", x)][:2]
-        partes += ["", f"Evidência ({t}):", *(estado or []), *linhas[-4:]]
+        if t == "memória":  # os maiores consumidores vêm logo após o cabeçalho
+            i = next((n for n, x in enumerate(linhas) if x.startswith("## processos")), len(linhas))
+            corpo = linhas[i + 1:i + 5]
+        else:
+            corpo = linhas[-4:]
+        partes += ["", f"Evidência ({t}):", *(estado or []), *corpo]
     return redigir("\n".join(partes))[:3800]
 
 
@@ -200,6 +207,15 @@ def avisar(texto):
         try:
             urllib.request.urlopen(req, timeout=20).read()
             return
+        except urllib.error.HTTPError as e:
+            try:
+                motivo = json.loads(e.read()).get("description", "")
+            except ValueError:
+                motivo = ""
+            log.warning("Telegram recusou (HTTP %d): %s", e.code, motivo)
+            if 400 <= e.code < 500 and e.code != 429:
+                return  # erro do nosso lado (ex.: bot bloqueado): repetir não adianta
+            time.sleep(3 * (tentativa + 1))
         except (urllib.error.URLError, TimeoutError) as e:
             log.warning("Telegram falhou (tentativa %d): %s", tentativa + 1, type(e).__name__)
             time.sleep(3 * (tentativa + 1))
