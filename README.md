@@ -10,7 +10,7 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 - **Medir antes de construir.** Toda escolha relevante tem critério definido *antes* do teste
   e veredicto registrado depois (ver [`docs/decisoes/`](docs/decisoes/)).
 
-> Status: Etapa 0 concluída; **Etapa 1 — gateway** no ar com rota local e nuvem gratuita. O histórico completo está nas
+> Status: Etapas 0 e 1 no ar; **Etapa 2 — agente SRE** investigando alertas e agindo só com aprovação no Telegram. O histórico completo está nas
 > [issues](../../issues?q=is%3Aissue) e [milestones](../../milestones).
 
 ## Resultados até agora
@@ -21,6 +21,7 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 | 🔑 **Segredos vazados** | 21 repositórios varridos no histórico completo, **0 em públicos**, com controle positivo ([relatório](docs/seguranca/0002-varredura-segredos.md)) |
 | 🎮 **GPU** | Driver com Secure Boot ligado, sem acesso físico; GPU disponível em containers ([ADR 0002](docs/decisoes/0002-driver-nvidia-secure-boot.md)) |
 | 🚪 **Gateway de IA** | Bifrost com chave por projeto, fallback local → nuvem gratuita, chave privada que falha fechado (auditado), orçamento e logs sem conteúdo; 22/22 testes de aceitação; overhead de 0,7 ms. LiteLLM recusado por ataque de supply chain na véspera ([etapa 1](docs/etapa-1.md), [ADR 0004](docs/decisoes/0004-gateway-bifrost.md)) |
+| 🛟 **Agente SRE** | Alerta → diagnóstico por SSH preso a *forced command* (catálogo fechado) → explicação da IA local → botão de aprovação no Telegram → ação → conferência independente. Com a IA fora, o aviso sai montado por regras ([ADR 0006](docs/decisoes/0006-monitoramento-agente-sre.md)) |
 | 🧪 **Benchmark pré-registrado** | 4 modelos locais; 2 GO. Padrão `gemma4:e4b`: 96% em alertas, 97% em extração, 74 tokens/s. Modelos de 8–9B não cabem e não acertam mais ([resultados](docs/benchmarks/0001-resultados.md)) |
 
 ## Arquitetura
@@ -49,7 +50,7 @@ Detalhes em [`docs/arquitetura.md`](docs/arquitetura.md).
 |---|---|---|
 | **0 — Fundação** | Mapa do lab, segurança básica, GPU funcionando, benchmark de modelos locais | ✅ concluída |
 | **1 — Plataforma de IA privada** | Gateway único que roteia entre modelo local e API externa, com painel de custo/uso | 🟡 local + nuvem gratuita prontos; rota paga futura |
-| **2 — Agente SRE** | Agente que investiga alertas da infra e pede aprovação humana no Telegram | ⚪ |
+| **2 — Agente SRE** | Agente que investiga alertas da infra e pede aprovação humana no Telegram | 🟡 monitoramento, agente e aprovação no ar; falta o teste de falhas pré-registrado |
 | **3 — Solução aplicada** | Caso real de empresa em cima das etapas 1–2 | ⚪ |
 
 Trilha paralela de **segurança defensiva**: caça a segredos vazados → hardening com nota antes/depois
