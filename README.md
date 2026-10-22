@@ -10,7 +10,7 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 - **Medir antes de construir.** Toda escolha relevante tem critério definido *antes* do teste
   e veredicto registrado depois (ver [`docs/decisoes/`](docs/decisoes/)).
 
-> Status: **Etapa 0 — Fundação** em andamento. O histórico completo está nas
+> Status: **Etapa 0 — Fundação** concluída em 2026-10-22; próxima: Etapa 1 (gateway). O histórico completo está nas
 > [issues](../../issues?q=is%3Aissue) e [milestones](../../milestones).
 
 ## Resultados até agora
@@ -46,7 +46,7 @@ Detalhes em [`docs/arquitetura.md`](docs/arquitetura.md).
 
 | Etapa | Entrega | Status |
 |---|---|---|
-| **0 — Fundação** | Mapa do lab, segurança básica, GPU funcionando, benchmark de modelos locais | 🟡 em andamento |
+| **0 — Fundação** | Mapa do lab, segurança básica, GPU funcionando, benchmark de modelos locais | ✅ concluída |
 | **1 — Plataforma de IA privada** | Gateway único que roteia entre modelo local e API externa, com painel de custo/uso | ⚪ |
 | **2 — Agente SRE** | Agente que investiga alertas da infra e pede aprovação humana no Telegram | ⚪ |
 | **3 — Solução aplicada** | Caso real de empresa em cima das etapas 1–2 | ⚪ |
