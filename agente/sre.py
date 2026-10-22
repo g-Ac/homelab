@@ -15,11 +15,15 @@ import os
 import queue
 import re
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # pasta do agente (root, só leitura)
+import aprovacao  # noqa: E402
 
 log = logging.getLogger("homelab-sre")
 
@@ -193,20 +197,26 @@ def montar(alerta, evid, explicacao, origem):
     return redigir("\n".join(partes))[:3800]
 
 
-def avisar(texto):
+def telegram(metodo, corpo, timeout=20):
+    req = urllib.request.Request(f"https://api.telegram.org/bot{CFG['telegram_token']}/{metodo}",
+                                 json.dumps(corpo).encode(), {"Content-Type": "application/json", "User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.load(r).get("result")
+
+
+def avisar(texto, teclado=None):
     os.makedirs(CFG["estado"], exist_ok=True)
     with open(os.path.join(CFG["estado"], "avisos.jsonl"), "a") as f:
         f.write(json.dumps({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "texto": texto}, ensure_ascii=False) + "\n")
     if not (CFG["telegram_token"] and CFG["telegram_chat"]):
         log.info("Telegram não configurado; aviso só registrado:\n%s", texto)
         return
-    corpo = json.dumps({"chat_id": CFG["telegram_chat"], "text": texto, "disable_web_page_preview": True}).encode()
-    req = urllib.request.Request(f"https://api.telegram.org/bot{CFG['telegram_token']}/sendMessage", corpo,
-                                 {"Content-Type": "application/json", "User-Agent": UA})
+    corpo = {"chat_id": CFG["telegram_chat"], "text": texto, "disable_web_page_preview": True}
+    if teclado:
+        corpo["reply_markup"] = {"inline_keyboard": teclado}
     for tentativa in range(3):
         try:
-            urllib.request.urlopen(req, timeout=20).read()
-            return
+            return (telegram("sendMessage", corpo) or {}).get("message_id")
         except urllib.error.HTTPError as e:
             try:
                 motivo = json.loads(e.read()).get("description", "")
@@ -219,6 +229,104 @@ def avisar(texto):
         except (urllib.error.URLError, TimeoutError) as e:
             log.warning("Telegram falhou (tentativa %d): %s", tentativa + 1, type(e).__name__)
             time.sleep(3 * (tentativa + 1))
+
+
+# --- Ações aprovadas (issue #20) ---------------------------------------------------------------
+
+pendentes = None  # criado no main() quando o Telegram está configurado
+
+
+def executar(acao_id):
+    onde, comando, _ = aprovacao.CATALOGO[acao_id]
+    if onde == "srv":
+        return rodar(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+                      "-i", os.path.join(CFG["estado"], ".ssh", "id_acoes"), CFG["srv_ssh"], comando], timeout=90)
+    # autorizado pelo polkit (60-homelab-sre.rules) só para os serviços do catálogo
+    return rodar(["systemctl", "restart", f"{comando}.service"], timeout=90)
+
+
+def conferir(acao_id, contexto):
+    """Depois de agir, confere de forma independente se voltou."""
+    time.sleep(20)
+    onde, comando, _ = aprovacao.CATALOGO[acao_id]
+    linhas = []
+    alvo = contexto.get("alvo", "")
+    if alvo.startswith("http"):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(alvo, headers={"User-Agent": UA}), timeout=10) as r:
+                linhas.append(f"checagem HTTP: {r.status}")
+                ok = 200 <= r.status < 300
+        except (urllib.error.URLError, TimeoutError) as e:
+            linhas.append(f"checagem HTTP falhou: {type(e).__name__}")
+            ok = False
+    elif onde == "srv" and comando.startswith("reiniciar-container"):
+        estado = diag_srv(f"container {comando.split()[1]}")
+        ok = "| Up " in estado
+        linhas.append(estado.splitlines()[1] if len(estado.splitlines()) > 1 else estado)
+    else:
+        unidade = comando.split()[-1] if onde == "srv" else f"{comando}.service"
+        if onde == "srv":
+            unidade = unidade if unidade.endswith(".timer") else f"{unidade}.service"
+            estado = diag_srv(f"servico {unidade}")
+        else:
+            estado = rodar(["systemctl", "is-active", unidade])
+        ok = "active (running)" in estado or "active (waiting)" in estado or estado.strip() == "active"
+        linhas.append(next((x.strip() for x in estado.splitlines() if "Active:" in x), estado.strip()[:120]))
+    return ok, linhas
+
+
+def auditar(registro):
+    with open(os.path.join(CFG["estado"], "acoes.jsonl"), "a") as f:
+        f.write(json.dumps({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), **registro}, ensure_ascii=False) + "\n")
+
+
+def tratar_clique(cq):
+    dados, quem = cq.get("data", ""), str(cq.get("from", {}).get("id", ""))
+    msg = cq.get("message") or {}
+    tipo, _, token = dados.partition(":")
+    decisao = {"a": "aprovar", "i": "ignorar"}.get(tipo, "invalida")
+    ok, motivo, acao_id = pendentes.decidir(token, quem, decisao)
+    auditar({"evento": "clique", "usuario": quem, "decisao": decisao, "resultado": motivo, "acao": acao_id})
+    respostas = {"aprovado": "Executando…", "ignorado": "Ok, ignorado.", "expirado": "Expirou (mais de 15 min).",
+                 "usuario-nao-autorizado": "Você não pode aprovar isto."}
+    try:
+        telegram("answerCallbackQuery", {"callback_query_id": cq["id"],
+                                         "text": respostas.get(motivo, f"Recusado: {motivo}")})
+        if motivo in ("aprovado", "ignorado", "expirado") and msg:
+            telegram("editMessageReplyMarkup", {"chat_id": msg["chat"]["id"], "message_id": msg["message_id"],
+                                                "reply_markup": {"inline_keyboard": []}})
+    except (urllib.error.URLError, TimeoutError):
+        pass
+    if not ok:
+        if motivo == "usuario-nao-autorizado":
+            log.warning("clique de usuário não autorizado (%s) recusado", quem)
+        return
+    contexto = pendentes.dados.get(token, {}).get("contexto", {})
+    rotulo = aprovacao.CATALOGO[acao_id][2]
+    log.info("ação aprovada por %s: %s", quem, acao_id)
+    saida = executar(acao_id)
+    voltou, linhas = conferir(acao_id, contexto)
+    auditar({"evento": "execucao", "usuario": quem, "acao": acao_id, "voltou": voltou, "saida": saida[-300:]})
+    icone = "✅ Resolvido" if voltou else "⚠️ Executei, mas NÃO voltou"
+    avisar(redigir(f"{icone} · {rotulo}\n\n" + "\n".join(linhas) +
+                   ("" if voltou else "\n\nPrecisa de olho humano: confira os logs.")))
+
+
+def escutar_cliques():
+    """Long polling só de callback_query. Atenção: o bot não pode ter outro programa lendo getUpdates."""
+    offset = None
+    while True:
+        try:
+            corpo = {"timeout": 25, "allowed_updates": ["callback_query"]}
+            if offset is not None:
+                corpo["offset"] = offset
+            for u in telegram("getUpdates", corpo, timeout=35) or []:
+                offset = u["update_id"] + 1
+                if "callback_query" in u:
+                    threading.Thread(target=tratar_clique, args=(u["callback_query"],), daemon=True).start()
+        except Exception as e:  # rede instável: espera e tenta de novo
+            log.warning("escuta do Telegram: %s", type(e).__name__)
+            time.sleep(10)
 
 
 # --- Fila e servidor HTTP ------------------------------------------------------------------------
@@ -235,7 +343,17 @@ def trabalhador():
                 continue
             evid = coletar(alerta)
             explicacao, origem = perguntar_ia(alerta, evid)
-            avisar(montar(alerta, evid, explicacao, origem))
+            texto, teclado = montar(alerta, evid, explicacao, origem), None
+            acao = aprovacao.acao_sugerida(alerta.get("labels", {}))
+            if acao and pendentes is not None:
+                l = alerta.get("labels", {})
+                token = pendentes.propor(acao, {"alerta": l.get("alertname"), "maquina": l.get("maquina"),
+                                                "alvo": l.get("alvo", ""), "resumo": alerta.get("annotations", {}).get("resumo", "")})
+                rotulo = aprovacao.CATALOGO[acao][2]
+                texto += f"\n\n👉 Sugestão: {rotulo}. Só executo se você aprovar (vale 15 min)."
+                teclado = [[{"text": f"✅ {rotulo}", "callback_data": f"a:{token}"},
+                            {"text": "Ignorar", "callback_data": f"i:{token}"}]]
+            avisar(texto, teclado)
         except Exception:  # o agente nunca pode morrer por causa de um alerta
             log.exception("erro ao processar alerta")
             avisar(f"⚠️ Agente SRE falhou ao processar {alerta.get('labels', {}).get('alertname')}; ver journal.")
@@ -272,6 +390,11 @@ class Webhook(BaseHTTPRequestHandler):
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    global pendentes
+    if CFG["telegram_token"] and CFG["telegram_chat"]:
+        pendentes = aprovacao.Pendentes(os.path.join(CFG["estado"], "pendentes.json"), CFG["telegram_chat"])
+        pendentes.limpar()
+        threading.Thread(target=escutar_cliques, daemon=True).start()
     threading.Thread(target=trabalhador, daemon=True).start()
     host, porta = CFG["ouvir"].rsplit(":", 1)
     log.info("agente SRE ouvindo em %s (Telegram %s, IA %s)", CFG["ouvir"],

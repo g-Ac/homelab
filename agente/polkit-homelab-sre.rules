@@ -1,0 +1,13 @@
+// Agente SRE: só pode REINICIAR estes serviços, e só depois de aprovação no Telegram (issue #20).
+// Usa polkit em vez de sudo para manter NoNewPrivileges=true no serviço do agente.
+polkit.addRule(function(action, subject) {
+    if (action.id !== "org.freedesktop.systemd1.manage-units" || subject.user !== "homelab-sre") {
+        return polkit.Result.NOT_HANDLED;
+    }
+    var permitidos = ["trade-desk.service", "liquidation-collector.service", "mesa.service",
+                      "radar.service", "painel-servidor.service", "mosquitto.service"];
+    if (action.lookup("verb") === "restart" && permitidos.indexOf(action.lookup("unit")) >= 0) {
+        return polkit.Result.YES;
+    }
+    return polkit.Result.NO;
+});
