@@ -1,0 +1,28 @@
+# Bifrost: gateway único de IA (ADR 0004).
+services:
+  bifrost:
+    # v2.3.1, fixado por digest; quarentena de 72 h cumprida (ADR 0004)
+    image: maximhq/bifrost@sha256:fe323e244998e1a40b87be87f60d023746eae40dd69baae8f7f42728a5e16149
+    container_name: bifrost
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "${TAILSCALE_IP:?defina TAILSCALE_IP no .env}:8080:8080"
+    env_file: .env
+    volumes:
+      - ./config.json:/app/data/config.json:ro
+      - bifrost-data:/app/data/store
+    networks: [ia]
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+volumes:
+  bifrost-data:
+
+networks:
+  ia:
+    external: true
