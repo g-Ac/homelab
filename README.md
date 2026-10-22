@@ -17,7 +17,7 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 
 | | |
 |---|---|
-| 🔒 **Hardening do servidor** | Nota Lynis **62 → 69**; achado: SSH exposto em IPv6 global sem firewall ([relatório](docs/seguranca/0001-hardening-srv.md)) |
+| 🔒 **Hardening** | srv: Lynis **62 → 69** ([relatório](docs/seguranca/0001-hardening-srv.md)) · Pi: **63 → 66**, 68 atualizações de segurança e firewall onde não havia nenhum ([relatório](docs/seguranca/0003-hardening-pi.md)) |
 | 🔑 **Segredos vazados** | 21 repositórios varridos no histórico completo, **0 em públicos**, com controle positivo ([relatório](docs/seguranca/0002-varredura-segredos.md)) |
 | 🎮 **GPU** | Driver com Secure Boot ligado, sem acesso físico; GPU disponível em containers ([ADR 0002](docs/decisoes/0002-driver-nvidia-secure-boot.md)) |
 | 🚪 **Gateway de IA** | Bifrost com chave por projeto, fallback local → nuvem gratuita, chave privada que falha fechado (auditado), orçamento e logs sem conteúdo; 22/22 testes de aceitação; overhead de 0,7 ms. LiteLLM recusado por ataque de supply chain na véspera ([etapa 1](docs/etapa-1.md), [ADR 0004](docs/decisoes/0004-gateway-bifrost.md)) |
