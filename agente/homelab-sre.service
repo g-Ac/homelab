@@ -1,0 +1,23 @@
+[Unit]
+Description=Agente SRE do homelab (investiga alertas; não age sozinho)
+Documentation=https://github.com/g-Ac/homelab
+After=network-online.target alertmanager.service
+Wants=network-online.target
+
+[Service]
+User=homelab-sre
+Group=homelab-sre
+EnvironmentFile=/etc/homelab-sre/env
+ExecStart=/usr/bin/python3 -I /usr/local/lib/homelab/sre.py
+Restart=always
+RestartSec=5
+MemoryMax=100M
+CPUQuota=50%
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/homelab-sre
+
+[Install]
+WantedBy=multi-user.target

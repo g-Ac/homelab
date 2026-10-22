@@ -177,6 +177,27 @@
             "weight": 1
           }
         ]
+      },
+      {
+        "id": "vk-sre",
+        "name": "sre",
+        "value": "env.VK_SRE",
+        "is_active": true,
+        "disable_content_logging": true,
+        "rate_limit_id": "rl-sre",
+        "provider_configs": [
+          {
+            "provider": "ollama",
+            "allowed_models": [
+              "gemma4:e4b",
+              "qwen3.5:4b"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          }
+        ]
       }
     ],
     "routing_rules": [
@@ -252,6 +273,11 @@
         "id": "rl-geral",
         "request_max_limit": 25,
         "request_reset_duration": "1m"
+      },
+      {
+        "id": "rl-sre",
+        "request_max_limit": 120,
+        "request_reset_duration": "1h"
       }
     ]
   },
