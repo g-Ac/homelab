@@ -62,13 +62,55 @@
             ],
             "weight": 1
           }
-        ]
+        ],
+        "rate_limit_id": "rl-privado"
       },
       {
         "id": "vk-geral",
         "name": "geral",
         "value": "env.VK_GERAL",
         "is_active": true,
+        "provider_configs": [
+          {
+            "provider": "ollama",
+            "allowed_models": [
+              "gemma4:e4b",
+              "qwen3.5:4b"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          }
+        ]
+      },
+      {
+        "id": "vk-teste-orcamento",
+        "name": "teste-orcamento",
+        "value": "env.VK_TESTE_ORCAMENTO",
+        "is_active": true,
+        "disable_content_logging": true,
+        "provider_configs": [
+          {
+            "provider": "ollama",
+            "allowed_models": [
+              "gemma4:e4b",
+              "qwen3.5:4b"
+            ],
+            "key_ids": [
+              "*"
+            ],
+            "weight": 1
+          }
+        ]
+      },
+      {
+        "id": "vk-teste-limite",
+        "name": "teste-limite",
+        "value": "env.VK_TESTE_LIMITE",
+        "is_active": true,
+        "disable_content_logging": true,
+        "rate_limit_id": "rl-teste",
         "provider_configs": [
           {
             "provider": "ollama",
@@ -100,6 +142,56 @@
         "fallbacks": [
           "ollama/qwen3.5:4b"
         ]
+      }
+    ],
+    "pricing_overrides": [
+      {
+        "id": "6b1f6e1a-0c1d-4c55-9a51-000000000001",
+        "name": "Custo-sombra gemma4 = preço Claude Haiku 4.5",
+        "scope_kind": "global",
+        "match_type": "exact",
+        "pattern": "gemma4:e4b",
+        "request_types": [
+          "chat_completion"
+        ],
+        "pricing_patch": "{\"input_cost_per_token\":0.000001,\"output_cost_per_token\":0.000005}"
+      },
+      {
+        "id": "6b1f6e1a-0c1d-4c55-9a51-000000000002",
+        "name": "Custo-sombra qwen3.5 = preço Claude Haiku 4.5",
+        "scope_kind": "global",
+        "match_type": "exact",
+        "pattern": "qwen3.5:4b",
+        "request_types": [
+          "chat_completion"
+        ],
+        "pricing_patch": "{\"input_cost_per_token\":0.000001,\"output_cost_per_token\":0.000005}"
+      }
+    ],
+    "budgets": [
+      {
+        "id": "budget-geral-mensal",
+        "max_limit": 5.0,
+        "reset_duration": "1M",
+        "virtual_key_id": "vk-geral"
+      },
+      {
+        "id": "budget-teste",
+        "max_limit": 0.0005,
+        "reset_duration": "1h",
+        "virtual_key_id": "vk-teste-orcamento"
+      }
+    ],
+    "rate_limits": [
+      {
+        "id": "rl-privado",
+        "request_max_limit": 600,
+        "request_reset_duration": "1h"
+      },
+      {
+        "id": "rl-teste",
+        "request_max_limit": 3,
+        "request_reset_duration": "1m"
       }
     ]
   },
