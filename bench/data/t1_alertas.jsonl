@@ -1,0 +1,24 @@
+{"id": "a01", "texto": "[srv] Temperatura da GPU em 96°C, throttling térmico ativo, ventoinha reportando 0 RPM.", "gabarito": "critico"}
+{"id": "a02", "texto": "[srv] logrotate rotacionou 12 arquivos em /var/log.", "gabarito": "ruido"}
+{"id": "a03", "texto": "[srv] Docker removeu 3 imagens não utilizadas na limpeza semanal, liberando 1,1 GB.", "gabarito": "ruido"}
+{"id": "a04", "texto": "[srv] Fila de jobs com 340 itens pendentes (normal é menos de 50); processamento continua, mas atrasado.", "gabarito": "atencao"}
+{"id": "a05", "texto": "[pi] OOM killer encerrou o postgres (pid 812). Banco indisponível; aplicações retornando erro de conexão.", "gabarito": "critico"}
+{"id": "a06", "texto": "[pi] Uso de swap em 65% de forma contínua nas últimas 6 horas.", "gabarito": "atencao"}
+{"id": "a07", "texto": "[srv] Healthcheck do ollama: OK (latência 38 ms).", "gabarito": "ruido"}
+{"id": "a08", "texto": "[pi] Conexão com a Tailscale caiu por 4 segundos e reconectou automaticamente.", "gabarito": "ruido"}
+{"id": "a09", "texto": "[backup] Job de backup noturno falhou pela 7ª noite seguida; último backup válido há 8 dias.", "gabarito": "critico"}
+{"id": "a10", "texto": "[srv] CPU em 95% por 40 segundos durante a compilação agendada; voltou a 8%.", "gabarito": "ruido"}
+{"id": "a11", "texto": "[srv] SMART: /dev/sda Reallocated_Sector_Ct subiu de 0 para 8 nesta semana; disco ainda reporta PASSED.", "gabarito": "atencao"}
+{"id": "a12", "texto": "[srv] Backup noturno concluído com sucesso em 14 minutos (4,2 GB).", "gabarito": "ruido"}
+{"id": "a13", "texto": "[srv] Disco / em 82% e crescendo cerca de 2% por dia nos últimos 7 dias.", "gabarito": "atencao"}
+{"id": "a14", "texto": "[srv] Disco / em 98% (232G/233G). Escritas falhando com 'No space left on device' no postgres.", "gabarito": "critico"}
+{"id": "a15", "texto": "[srv] Certificado TLS de painel.lab expira em 12 dias.", "gabarito": "atencao"}
+{"id": "a16", "texto": "[srv] Latência p95 da API subiu de 120 ms para 480 ms após o deploy das 14h; nenhum erro registrado.", "gabarito": "atencao"}
+{"id": "a17", "texto": "[srv] auth.log: login SSH ACEITO para usuário root a partir de 198.51.100.19 (IP desconhecido) às 03:12.", "gabarito": "critico"}
+{"id": "a18", "texto": "[pi] cryptobot.service reiniciado pelo deploy agendado; ativo novamente após 3 segundos.", "gabarito": "ruido"}
+{"id": "a19", "texto": "[srv] SMART: /dev/nvme0n1 Critical Warning 0x04 — mídia em modo somente leitura. Setores realocados: 512.", "gabarito": "critico"}
+{"id": "a20", "texto": "[pi] cryptobot.service: Main process exited, code=killed, status=9/KILL. Limite de restart atingido, serviço parado.", "gabarito": "critico"}
+{"id": "a21", "texto": "[srv] NTP: relógio sincronizado, desvio de 0,002 s.", "gabarito": "ruido"}
+{"id": "a22", "texto": "[srv] 23 pacotes com atualização de segurança pendente há 15 dias.", "gabarito": "atencao"}
+{"id": "a23", "texto": "[web] HTTP 503 em 100% das requisições para api.interna nos últimos 10 minutos. Healthcheck falhando em todos os nós.", "gabarito": "critico"}
+{"id": "a24", "texto": "[pi] Temperatura média da CPU em 71°C na última hora (throttling começa em 80°C).", "gabarito": "atencao"}
