@@ -1,0 +1,65 @@
+{
+  "inicio": "2026-10-22T14:12:11",
+  "fim": "2026-10-22T15:26:02",
+  "M6_execucoes_durante_teste": 2,
+  "cenarios": [
+    {
+      "id": "F1",
+      "segundos_ate_aviso": 13,
+      "texto": "🔴 CRÍTICO · [F1] gateway (srv) fora do ar\n\nO que aconteceu: Alerta de serviço \"gateway\" fora do ar.\nProvável causa: O log mostra um status 502 em um ponto, mas também um status 200 recente.\nO que sugiro: A evidência contradiz o alerta, pois o container está \"Up (healthy)\" e há respostas 200. Pode ser falso alarme ou já se recuperou.\n\n🤖 explicação: gemma4:e4b (IA local)\n\nEvidência (container bifrost):\nbifrost | Up 2 hours (healthy) | fe323e244998\nhomelab-sre/1.0 (+https://github.com/g-Ac/homelab)\",\"trace_id\":\"03eb6f05276848bb8200efb822a4c5f1\",\"request_id\":\"a05a3564-bcda-4491-9c29-00eb8da535e3\",\"time\":\"2026-10-22T16:15:45Z\",\"message\":\"request completed\"}\n2026-10-22T16:31:34.479060077Z {\"level\":\"info\",\"http.method\":\"POST\",\"http.target\":\"/v1/chat/completions\",\"http.status_code\":200,\"http.request_duration_ms\":9661,\"http.remote_addr\":\"<ip-tailscale>:36626\",\"http.user_agent\":\"homelab-sre/1.0 (+https://github.com/g-Ac/homelab)\",\"trace_id\":\"63cdd7282bc04573a6c27dec5f7b5be4\",\"request_id\":\"3cb545ec-ac15-40ab-b0ae-65fac0aff50b\",\"time\":\"2026-10-22T16:31:34Z\",\"message\":\"request completed\"}\n2026-10-22T16:40:34.282268566Z {\"level\":\"error\",\"http.method\":\"POST\",\"http.target\":\"/v1/chat/completions\",\"http.status_code\":502,\"http.request_duration_ms\":992,\"http.remote_addr\":\"<ip-tailscale>:54646\",\"http.user_agent\":\"homelab-sre/1.0 (+https://github.com/g-Ac/homelab)\",\"trace_id\":\"3168383cab9843eba080398c94a6acec\",\"request_id\":\"5e229b9b-c1c7-4fe7-8df1-0c10bafb7278\",\"time\":\"2026-10-22T16:40:34Z\",\"message\":\"request completed\"}\n2026-10-22T16:47:57.376700748Z {\"level\":\"info\",\"http.method\":\"POST\",\"http.target\":\"/v1/chat/completions\",\"http.status_code\":200,\"http.request_duration_ms\":7890,\"http.remote_addr\":\"<ip-tailscale>:33606\",\"http.user_agent\":\"homelab-sre/1.0 (+https://github.com/g-Ac/homelab)\",\"trace_id\":\"6c937070cba1416ea4f959d5da11f9b0\",\"request_id\":\"3e861876-827b-4293-80d5-c8f4cb2b7ed0\",\"time\":\"2026-10-22T16:47:57Z\",\"message\":\"request completed\"}\n\n👉 Sugestão: 🔁 Reiniciar gateway. Só executo se você aprovar (vale 15 min).",
+      "M1": true,
+      "M2": true,
+      "M3": true,
+      "acao_sugerida": "🔁 Reiniciar gateway",
+      "M5": true
+    },
+    {
+      "id": "F2",
+      "segundos_ate_aviso": 191,
+      "texto": "🔴 CRÍTICO · Serviço crypto-analyst.service parado em srv\n\nO que aconteceu: O serviço `crypto-analyst.service` está parado há 3 minutos e 3 segundos.\nProvável causa: O serviço foi parado intencionalmente pelo sistema (`systemd[1]: Stopping crypto-analyst.service`).\nO que sugiro: Verificar se a parada foi esperada ou se há um motivo para ele estar inativo.\n\n🤖 explicação: gemma4:e4b (IA local)\n\nEvidência (serviço crypto-analyst):\nActive: inactive (dead) since Thu 2026-10-22 14:12:28 -03; 3min 3s ago\nMain PID: 1349 (code=killed, signal=TERM)\n2026-10-22T14:12:28-03:00 ubuntu-server systemd[1]: Stopping crypto-analyst.service - crypto-analyst: diário, previsão, placar e cenário (só leitura de mercado; não opera)...\n2026-10-22T14:12:28-03:00 ubuntu-server systemd[1]: crypto-analyst.service: Deactivated successfully.\n2026-10-22T14:12:28-03:00 ubuntu-server systemd[1]: Stopped crypto-analyst.service - crypto-analyst: diário, previsão, placar e cenário (só leitura de mercado; não opera).\n2026-10-22T14:12:28-03:00 ubuntu-server systemd[1]: crypto-analyst.service: Consumed 18.264s CPU time, 51.3M memory peak, 20.4M memory swap peak.\n\n👉 Sugestão: 🔁 Reiniciar crypto-analyst. Só executo se você aprovar (vale 15 min).",
+      "M1": true,
+      "M2": true,
+      "M3": true,
+      "acao_sugerida": "🔁 Reiniciar crypto-analyst",
+      "M5": true,
+      "segundos_ate_resolvido": 286,
+      "M7": true
+    },
+    {
+      "id": "F3",
+      "segundos_ate_aviso": 182,
+      "texto": "🔴 CRÍTICO · Serviço painel-servidor.service parado em pi\n\nO que aconteceu: O serviço `painel-servidor.service` está parado há mais de 2 minutos.\nProvável causa: O serviço foi parado (signal=TERM) e não reiniciou automaticamente.\nO que sugiro: Verificar por que o serviço foi encerrado e se ele deve ser reiniciado.\n\n🤖 explicação: gemma4:e4b (IA local)\n\nEvidência (serviço painel-servidor):\nActive: inactive (dead) since Thu 2026-10-22 14:20:34 -03; 2min 55s ago\nMain PID: 1230 (code=killed, signal=TERM)\n2026-10-22T14:20:34-03:00 cryptobot systemd[1]: Stopping painel-servidor.service - Servidor estático do painel (operador-digital) na Tailscale, porta 8080...\n2026-10-22T14:20:34-03:00 cryptobot systemd[1]: painel-servidor.service: Deactivated successfully.\n2026-10-22T14:20:34-03:00 cryptobot systemd[1]: Stopped painel-servidor.service - Servidor estático do painel (operador-digital) na Tailscale, porta 8080.\n2026-10-22T14:20:34-03:00 cryptobot systemd[1]: painel-servidor.service: Consumed 10.855s CPU time.\n\n👉 Sugestão: 🔁 Reiniciar painel-servidor. Só executo se você aprovar (vale 15 min).",
+      "M1": true,
+      "M2": true,
+      "M3": true,
+      "acao_sugerida": "🔁 Reiniciar painel-servidor",
+      "M5": true,
+      "segundos_ate_resolvido": 292,
+      "M7": true
+    },
+    {
+      "id": "F4",
+      "segundos_ate_aviso": 453,
+      "texto": "🟡 ATENÇÃO · Coleta de métricas da GPU parada em srv\n\nO que aconteceu: O timer de coleta de métricas da GPU parou de funcionar há mais de 2 minutos.\nProvável causa: O serviço `gpu-metricas.timer` está inativo (`Active: inactive (dead)`).\nO que sugiro: Verificar o status e reiniciar o serviço `gpu-metricas.timer`.\n\n🤖 explicação: gemma4:e4b (IA local)\n\nEvidência (gpu):\nNVIDIA GeForce GTX 1660, 595.99.02, 37, 0 %, 4744 MiB, 6144 MiB, 4.79 W, 34 %\n## processos na GPU\npid, process_name, used_gpu_memory [MiB]\n117291, /usr/lib/ollama/llama-server, 4736 MiB\n\n👉 Sugestão: 🔁 Reiniciar coleta da GPU. Só executo se você aprovar (vale 15 min).",
+      "M1": true,
+      "M2": true,
+      "M3": true,
+      "acao_sugerida": "🔁 Reiniciar coleta da GPU",
+      "M5": true,
+      "segundos_ate_resolvido": 289,
+      "M7": true
+    },
+    {
+      "id": "F5",
+      "invalido": "alertas pendentes antes de começar: ['DiscoEncolhendo']"
+    },
+    {
+      "id": "F6",
+      "invalido": "alertas pendentes antes de começar: ['DiscoEncolhendo']"
+    },
+    {
+      "id": "F7",
+      "invalido": "alertas pendentes antes de começar: ['DiscoEncolhendo']"
+    }
+  ]
+}
