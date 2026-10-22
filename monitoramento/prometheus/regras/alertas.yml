@@ -1,0 +1,95 @@
+# Regras de alerta do homelab. A gravidade é definida AQUI, por regra; o agente SRE não pode rebaixá-la (ADR 0006).
+groups:
+  - name: disponibilidade
+    rules:
+      - alert: MaquinaFora
+        expr: up{job="node"} == 0
+        for: 2m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "{{ $labels.maquina }} não responde há 2 minutos"
+          descricao: "O Prometheus não consegue coletar métricas do node_exporter de {{ $labels.maquina }}."
+
+      - alert: ServicoHttpFora
+        expr: probe_success{job="http"} == 0
+        for: 2m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "{{ $labels.servico }} ({{ $labels.maquina }}) fora do ar"
+          descricao: "A checagem HTTP de {{ $labels.alvo }} falha há 2 minutos."
+
+      - alert: ServicoSystemdParado
+        expr: node_systemd_unit_state{state="active"} == 0
+        for: 2m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "Serviço {{ $labels.name }} parado em {{ $labels.maquina }}"
+          descricao: "O systemd informa que {{ $labels.name }} não está ativo há 2 minutos."
+
+  - name: recursos
+    rules:
+      - alert: DiscoQuaseCheio
+        expr: node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < 0.10
+        for: 5m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "Disco de {{ $labels.maquina }} com menos de 10% livre"
+          descricao: "Partição / com {{ $value | humanizePercentage }} livre."
+
+      - alert: DiscoEncolhendo
+        expr: node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} < 0.20
+        for: 15m
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "Disco de {{ $labels.maquina }} com menos de 20% livre"
+          descricao: "Partição / com {{ $value | humanizePercentage }} livre. Planejar limpeza."
+
+      - alert: DiscoVaiEncherEm24h
+        expr: predict_linear(node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"}[6h], 24 * 3600) < 0
+        for: 30m
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "Disco de {{ $labels.maquina }} deve encher em menos de 24 h"
+          descricao: "Projeção linear das últimas 6 h indica disco cheio em menos de um dia."
+
+      - alert: MemoriaBaixa
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+        for: 10m
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "Memória de {{ $labels.maquina }} abaixo de 10% disponível"
+          descricao: "{{ $value | humanizePercentage }} de memória disponível há 10 minutos."
+
+  - name: temperatura
+    rules:
+      - alert: CpuQuentePi
+        expr: node_thermal_zone_temp{maquina="pi",type="cpu-thermal"} > 75
+        for: 5m
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "CPU do Pi a {{ $value }} °C"
+          descricao: "Acima de 75 °C há 5 minutos; o Pi reduz o clock perto de 80 °C."
+
+      - alert: GpuQuente
+        expr: homelab_gpu_temperatura_celsius > 85
+        for: 5m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "GPU do {{ $labels.maquina }} a {{ $value }} °C"
+          descricao: "Acima de 85 °C há 5 minutos. Verificar ventoinha e carga."
+
+      - alert: GpuSemDriver
+        expr: homelab_gpu_up == 0
+        for: 5m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "nvidia-smi não responde em {{ $labels.maquina }}"
+          descricao: "Driver da GPU indisponível; os modelos locais param de funcionar."
+
+      - alert: MetricasGpuParadas
+        expr: time() - node_textfile_mtime_seconds{file=~".*gpu.prom"} > 120
+        for: 5m
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "Coleta de métricas da GPU parada em {{ $labels.maquina }}"
+          descricao: "O arquivo gpu.prom não é atualizado há mais de 2 minutos (timer gpu-metricas)."

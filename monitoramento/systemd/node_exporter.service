@@ -1,0 +1,21 @@
+[Unit]
+Description=Prometheus node_exporter (homelab)
+Documentation=https://github.com/g-Ac/homelab
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+EnvironmentFile=/etc/default/node_exporter
+ExecStart=/usr/local/bin/node_exporter $ARGS
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadOnlyPaths=/var/lib/node_exporter
+
+[Install]
+WantedBy=multi-user.target

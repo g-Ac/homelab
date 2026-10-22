@@ -1,0 +1,10 @@
+[Unit]
+Description=Coleta métricas da GPU a cada 15 s (homelab)
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=15
+AccuracySec=1
+
+[Install]
+WantedBy=timers.target

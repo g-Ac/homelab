@@ -1,0 +1,7 @@
+[Unit]
+Description=Métricas da GPU para o node_exporter (homelab)
+
+[Service]
+Type=oneshot
+User=node_exporter
+ExecStart=/usr/local/lib/homelab/gpu-metricas.sh

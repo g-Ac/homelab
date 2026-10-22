@@ -1,0 +1,9 @@
+# Serviços HTTP checados pelo blackbox. "servico" vira o nome no alerta.
+- targets: ["http://<ip-do-srv>:8080/health"]
+  labels: { maquina: srv, servico: gateway }
+- targets: ["http://<ip-do-srv>:11434/api/version"]
+  labels: { maquina: srv, servico: ollama }
+- targets: ["http://<ip-do-srv>:5100/"]
+  labels: { maquina: srv, servico: crypto-analyst }
+- targets: ["http://127.0.0.1:5000/"]
+  labels: { maquina: pi, servico: trade-desk }

@@ -1,0 +1,22 @@
+[Unit]
+Description=Prometheus (homelab)
+Documentation=https://github.com/g-Ac/homelab
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+EnvironmentFile=/etc/default/prometheus
+ExecStart=/usr/local/bin/prometheus $ARGS
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/prometheus
+
+[Install]
+WantedBy=multi-user.target

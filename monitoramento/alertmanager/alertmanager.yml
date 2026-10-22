@@ -1,0 +1,20 @@
+# Alertmanager do homelab: todo alerta vai para o agente SRE (#19), que decide como avisar.
+route:
+  receiver: agente-sre
+  group_by: [alertname, maquina, servico]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: agente-sre
+    webhook_configs:
+      - url: http://127.0.0.1:9099/alerta
+        send_resolved: true
+        max_alerts: 20
+
+inhibit_rules:
+  # Se a máquina inteira caiu, não avisa cada serviço dela separado.
+  - source_matchers: [alertname="MaquinaFora"]
+    target_matchers: [alertname=~"ServicoHttpFora|ServicoSystemdParado"]
+    equal: [maquina]
