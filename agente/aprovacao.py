@@ -26,6 +26,19 @@ CATALOGO = {
 }
 
 
+# Conferência pós-ação definida AQUI, por ação; nunca vem do alerta (issue #24).
+# ("http", porta no srv, caminho) | ("servico-srv", unidade) | ("servico-pi", unidade)
+VERIFICACAO = {
+    "reiniciar-container-ollama": ("http", 11434, "/api/version"),
+    "reiniciar-container-bifrost": ("http", 8080, "/health"),
+    "reiniciar-servico-crypto-analyst": ("http", 5100, "/"),
+    "reiniciar-servico-canario-amostra": ("servico-srv", "canario-amostra.service"),
+    "reiniciar-servico-gpu-metricas": ("servico-srv", "gpu-metricas.timer"),
+    **{f"reiniciar-servico-{s}": ("servico-pi", f"{s}.service")
+       for s in ("trade-desk", "liquidation-collector", "mesa", "radar", "painel-servidor", "mosquitto")},
+}
+
+
 def acao_sugerida(labels):
     """Mapeia o alerta para no máximo UMA ação do catálogo (ou None)."""
     nome = labels.get("alertname", "")

@@ -19,6 +19,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -91,9 +92,14 @@ def coletar(alerta):
     evid = []
     no_srv = maquina == "srv"
     if nome == "MaquinaFora":
-        evid.append(("tailscale", rodar(["tailscale", "status"])))
         if no_srv:
-            evid.append(("srv responde a SSH?", diag_srv("resumo")))
+            resumo = diag_srv("resumo")
+            evid.append(("srv responde a SSH?", resumo))
+            if "## uptime" in resumo:  # a máquina responde: o problema pode ser só o coletor (#25)
+                evid.append(("coletor node_exporter", diag_srv("servico node_exporter")))
+        else:
+            evid.append(("coletor node_exporter", diag_pi("servico", "node_exporter")))
+        evid.append(("tailscale", rodar(["tailscale", "status"])))
     elif nome in ("ServicoHttpFora", "ServicoSystemdParado"):
         if no_srv and servico in CONTAINERS_SRV:
             evid.append((f"container {CONTAINERS_SRV[servico]}", diag_srv(f"container {CONTAINERS_SRV[servico]}")))
@@ -132,6 +138,40 @@ def redigir(texto):
 
 # --- IA via gateway ------------------------------------------------------------------------------
 
+DISPONIBILIDADE = {"ServicoHttpFora", "ServicoSystemdParado", "MaquinaFora", "MetricasGpuParadas", "GpuSemDriver"}
+NEGA_REGRA = ["falso alarme", "alarme falso", "contradiz", "nao confirma", "nao se confirma", "ja se resolveu",
+              "ja se recuperou", "nao ha problema"]
+
+
+def sem_acento(t):
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFKD", t.lower()) if not unicodedata.combining(c))
+
+
+def classe_alerta(nome):
+    """Disponibilidade (algo caiu) ou limiar numérico. Desconhecido conta como limiar, o mais restritivo."""
+    return "disponibilidade" if nome in DISPONIBILIDADE else "limiar"
+
+
+def filtrar_explicacao(classe, texto):
+    """Trava determinística (#23): em alerta de limiar, a IA não pode desmentir a regra."""
+    if not texto:
+        return None
+    if classe == "limiar" and any(t in sem_acento(texto) for t in NEGA_REGRA):
+        return None
+    return texto
+
+
+INSTRUCAO_LIMIAR = (
+    "Você é um engenheiro SRE explicando um alerta para o dono do laboratório, que NÃO é técnico. "
+    "Responda em português, em no máximo 5 linhas curtas, neste formato:\n"
+    "O que aconteceu: ...\nProvável causa: ...\nO que sugiro: ...\n"
+    "Este é um alerta de LIMIAR NUMÉRICO. O valor medido pela regra, na descrição do alerta, é a fonte da "
+    "verdade: comandos como df e free arredondam números. NUNCA diga que é falso alarme nem que a evidência "
+    "contradiz o alerta. Explique o que está consumindo o recurso, com base na evidência, e o que fazer. "
+    "Não invente comandos. Não opine sobre a gravidade: ela já foi definida pela regra."
+)
+
 INSTRUCAO = (
     "Você é um engenheiro SRE explicando um alerta para o dono do laboratório, que NÃO é técnico. "
     "Responda em português, em no máximo 5 linhas curtas, neste formato:\n"
@@ -156,15 +196,21 @@ def perguntar_ia(alerta, evid):
     contexto = f"Alerta: {l.get('alertname')} | máquina: {l.get('maquina')} | serviço: {l.get('servico') or l.get('name', '')}\n"
     contexto += f"Resumo da regra: {a.get('resumo', '')}\n{a.get('descricao', '')}\n\nEvidência coletada:\n"
     contexto += "\n".join(f"### {t}\n{trecho(s, 700, 800)}" for t, s in evid)
+    classe = classe_alerta(l.get("alertname", ""))
+    instrucao = INSTRUCAO if classe == "disponibilidade" else INSTRUCAO_LIMIAR
     corpo = {"model": "local", "reasoning_effort": "none", "temperature": 0, "max_tokens": 300,
-             "messages": [{"role": "system", "content": INSTRUCAO}, {"role": "user", "content": redigir(contexto)}]}
+             "messages": [{"role": "system", "content": instrucao}, {"role": "user", "content": redigir(contexto)}]}
     req = urllib.request.Request(f"{CFG['gateway']}/v1/chat/completions", json.dumps(corpo).encode(),
                                  {"Content-Type": "application/json", "User-Agent": UA,
                                   "Authorization": f"Bearer {CFG['chave_ia']}"})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             d = json.load(r)
-        return d["choices"][0]["message"]["content"].strip(), d.get("model")
+        texto = filtrar_explicacao(classe, d["choices"][0]["message"]["content"].strip())
+        if texto is None:
+            log.warning("explicação da IA descartada: desmentia uma regra de limiar")
+            return None, "explicação da IA descartada (desmentia a regra de limiar)"
+        return texto, d.get("model")
     except (urllib.error.URLError, TimeoutError, KeyError, ValueError) as e:
         return None, f"IA indisponível ({type(e).__name__})"
 
@@ -246,33 +292,24 @@ def executar(acao_id):
 
 
 def conferir(acao_id, contexto):
-    """Depois de agir, confere de forma independente se voltou."""
+    """Depois de agir, confere de forma independente se voltou, pelo alvo definido no catálogo (#24)."""
     time.sleep(20)
-    onde, comando, _ = aprovacao.CATALOGO[acao_id]
-    linhas = []
-    alvo = contexto.get("alvo", "")
-    if alvo.startswith("http"):
+    spec = aprovacao.VERIFICACAO[acao_id]
+    if spec[0] == "http":
+        host = urllib.parse.urlparse(CFG["gateway"]).hostname
+        url = f"http://{host}:{spec[1]}{spec[2]}"
         try:
-            with urllib.request.urlopen(urllib.request.Request(alvo, headers={"User-Agent": UA}), timeout=10) as r:
-                linhas.append(f"checagem HTTP: {r.status}")
-                ok = 200 <= r.status < 300
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=10) as r:
+                return 200 <= r.status < 300, [f"checagem HTTP ({spec[2]}): {r.status}"]
         except (urllib.error.URLError, TimeoutError) as e:
-            linhas.append(f"checagem HTTP falhou: {type(e).__name__}")
-            ok = False
-    elif onde == "srv" and comando.startswith("reiniciar-container"):
-        estado = diag_srv(f"container {comando.split()[1]}")
-        ok = "| Up " in estado
-        linhas.append(estado.splitlines()[1] if len(estado.splitlines()) > 1 else estado)
-    else:
-        unidade = comando.split()[-1] if onde == "srv" else f"{comando}.service"
-        if onde == "srv":
-            unidade = unidade if unidade.endswith(".timer") else f"{unidade}.service"
-            estado = diag_srv(f"servico {unidade}")
-        else:
-            estado = rodar(["systemctl", "is-active", unidade])
-        ok = "active (running)" in estado or "active (waiting)" in estado or estado.strip() == "active"
-        linhas.append(next((x.strip() for x in estado.splitlines() if "Active:" in x), estado.strip()[:120]))
-    return ok, linhas
+            return False, [f"checagem HTTP ({spec[2]}) falhou: {type(e).__name__}"]
+    unidade = spec[1]
+    if spec[0] == "servico-srv":
+        estado = diag_srv(f"servico {unidade}")
+        linha = next((x.strip() for x in estado.splitlines() if "Active:" in x), estado.strip()[:120])
+        return "active (running)" in estado or "active (waiting)" in estado, [linha]
+    estado = rodar(["systemctl", "is-active", unidade]).strip()
+    return estado == "active", [f"{unidade}: {estado}"]
 
 
 def auditar(registro):

@@ -82,6 +82,22 @@ class TestPendentes(unittest.TestCase):
         self.assertTrue(all(len(t) >= 16 for t in tokens))
 
 
+class TestVerificacao(unittest.TestCase):
+    def test_toda_acao_tem_conferencia_propria(self):
+        self.assertEqual(set(aprovacao.VERIFICACAO), set(aprovacao.CATALOGO))
+
+    def test_conferencia_nao_usa_dados_do_alerta(self):
+        for acao, spec in aprovacao.VERIFICACAO.items():
+            self.assertIn(spec[0], ("http", "servico-srv", "servico-pi"), acao)
+            # nenhuma URL completa: host vem da configuração do agente, porta e caminho do catálogo
+            self.assertFalse(any(isinstance(x, str) and "://" in x for x in spec), acao)
+
+    def test_conferencia_no_mesmo_lugar_da_acao(self):
+        for acao, (onde, _, _) in aprovacao.CATALOGO.items():
+            tipo = aprovacao.VERIFICACAO[acao][0]
+            self.assertTrue(tipo == "http" or tipo.endswith(onde), acao)
+
+
 class TestAcaoSugerida(unittest.TestCase):
     def s(self, **labels):
         return aprovacao.acao_sugerida(labels)
