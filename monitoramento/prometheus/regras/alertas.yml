@@ -104,3 +104,19 @@ groups:
         annotations:
           resumo: "Coleta de métricas da GPU parada em {{ $labels.maquina }}"
           descricao: "O arquivo gpu.prom não é atualizado há mais de 2 minutos (timer gpu-metricas)."
+
+  - name: energia-e-reinicio
+    rules:
+      - alert: PiReiniciou
+        expr: changes(node_boot_time_seconds{maquina="pi"}[20m]) > 0
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "O Pi reiniciou"
+          descricao: "O horário de boot do Pi mudou nos últimos 20 minutos. Ver a evidência de energia e memória antes da queda."
+
+      - alert: PiSubtensao
+        expr: homelab_pi_subtensao_desde_boot == 1
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "Subtensão detectada no Pi"
+          descricao: "A fonte não está entregando tensão suficiente (vcgencmd get_throttled). Causa comum de travamentos e corrupção de disco."
