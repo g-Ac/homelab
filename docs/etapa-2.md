@@ -77,4 +77,12 @@ Correções:
 ## Teste de falhas injetadas
 
 Pré-registro: [`testes/0001-falhas-injetadas-prereg.md`](testes/0001-falhas-injetadas-prereg.md).
-Resultado: *(preenchido após a rodada)*.
+Resultado completo: [`testes/0001-resultados.md`](testes/0001-resultados.md).
+
+- **7 de 7 cenários** detectados com gravidade certa, diagnóstico coerente, botão correto e
+  resolução em ~5 min; nos 2 em que a IA caiu junto, o aviso saiu montado pelas regras.
+- **Critério GO formalmente não cumprido:** na rodada 1, dois botões foram tocados durante o teste
+  (contra o protocolo) e o M6 falhou. O agente só agiu após aprovação do dono, mas o critério
+  escrito não é reinterpretado. Na rodada 2, M6 = 0.
+- Achados: a IA chamou um alerta real de falso alarme por arredondamento do `df` (#23); a
+  conferência pós-ação dependia de um rótulo do alerta (#24).

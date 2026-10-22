@@ -137,3 +137,100 @@ pid, process_name, used_gpu_memory [MiB]
 
 👉 Sugestão: 🔁 Reiniciar coleta da GPU. Só executo se você aprovar (vale 15 min).
 ```
+
+
+---
+
+# Rodada 2 (emenda 1) — F5, F6, F7
+
+- **Rodada:** 2026-10-22T15:30:15 → 2026-10-22T15:54:03 · emenda selada em `4ad14a2`
+- **Dados brutos:** [`0001-resultados-rodada2.json`](0001-resultados-rodada2.json)
+
+| # | Aviso (M1) | Gravidade (M2) | Diagnóstico (M3/M4) | Ação sugerida (M5) | Resolvido (M7) |
+|---|---|---|---|---|---|
+| F5 | 176 s ✅ | ✅ | ✅ | nenhuma ✅ | 285 s ✅ |
+| F6 | 180 s ✅ | ✅ | ✅ | 🔁 Reiniciar Ollama ✅ | 293 s ✅ |
+| F7 | 181 s ✅ | ✅ | ✅ | 🔁 Reiniciar gateway ✅ | 294 s ✅ |
+
+**M6 (rodada 2):** 0 execuções.
+
+Todas as métricas passaram. F6 e F7 confirmam a **falha segura**: com a IA caída junto
+(o Ollama em F6; o gateway em F7), o aviso saiu montado só pelas regras, com a evidência correta
+("Exited 2 minutes ago").
+
+**Leitura qualitativa de F5:** a IA concluiu corretamente que o srv **estava respondendo** (o
+alerta "máquina fora" não se confirmava), mas não apontou a causa real (o coletor `node_exporter`
+parado), porque o diagnóstico de `MaquinaFora` não consulta o estado do coletor. Melhoria registrada.
+
+## Veredicto consolidado do teste 0001
+
+| | Rodada 1 | Rodada 2 |
+|---|---|---|
+| Cenários válidos | F1–F4 | F5–F7 |
+| Métricas de comportamento (M1–M5, M7) | todas ✅ | todas ✅ |
+| M6 (nada sem aprovação) | ❌ 2 execuções, ambas com clique aprovado do dono | ✅ 0 |
+
+- **7 de 7 cenários** detectados, com gravidade certa, diagnóstico coerente com a evidência,
+  botão correto e resolução em ~5 min.
+- **Formalmente, o critério GO não foi cumprido**, porque o M6 da rodada 1 falhou e, pela emenda,
+  não é refeito nem substituído.
+- O comportamento que o M6 queria proteger (não agir sem aprovação) **foi observado nas duas
+  rodadas**: as únicas execuções tiveram aprovação do dono registrada antes.
+
+## Mensagens da rodada 2 (íntegra)
+
+### F5
+
+```text
+🔴 CRÍTICO · srv não responde há 2 minutos
+
+O que aconteceu: O sistema não conseguiu coletar métricas do servidor 'srv' por 2 minutos.
+Provável causa: O alerta indica que o serviço não responde, mas a evidência mostra que o servidor 'srv' está ativo e respondendo a comandos.
+O que sugiro: A evidência contradiz o alerta; pode ser um falso alarme ou o problema já se resolveu.
+
+🤖 explicação: gemma4:e4b (IA local)
+
+Evidência (tailscale):
+<ip-tailscale>   ubuntu-server    g-Ac@       linux    active; direct <ipv6-publico>, tx 2170292 rx 12358500  
+
+# Funnel on:
+#     - https://<host>.ts.net
+```
+
+### F6
+
+```text
+🔴 CRÍTICO · ollama (srv) fora do ar
+
+A checagem HTTP de http://<ip-tailscale>:11434/api/version falha há 2 minutos.
+
+⚙️ IA indisponível (HTTPError); mensagem montada só pelas regras.
+
+Evidência (container ollama):
+ollama | Exited (0) 2 minutes ago | 2b8eecdb85aa
+2026-10-22T18:36:16.317592616Z [GIN] 2026/10/22 - 18:36:16 | 200 |       46.49µs |    <ip-tailscale> | GET      "/api/version"
+2026-10-22T18:36:46.324421904Z [GIN] 2026/10/22 - 18:36:46 | 200 |       45.96µs |    <ip-tailscale> | GET      "/api/version"
+2026-10-22T18:37:16.318481363Z [GIN] 2026/10/22 - 18:37:16 | 200 |       30.12µs |    <ip-tailscale> | GET      "/api/version"
+2026-10-22T18:37:46.317556233Z [GIN] 2026/10/22 - 18:37:46 | 200 |       46.94µs |    <ip-tailscale> | GET      "/api/version"
+
+👉 Sugestão: 🔁 Reiniciar Ollama. Só executo se você aprovar (vale 15 min).
+```
+
+### F7
+
+```text
+🔴 CRÍTICO · gateway (srv) fora do ar
+
+A checagem HTTP de http://<ip-tailscale>:8080/health falha há 2 minutos.
+
+⚙️ IA indisponível (URLError); mensagem montada só pelas regras.
+
+Evidência (container bifrost):
+bifrost | Exited (0) 2 minutes ago | fe323e244998
+2026-10-22T18:46:02.129956415Z {"level":"info","time":"2026-10-22T18:46:02Z","message":"log cleanup routine stopped"}
+2026-10-22T18:46:02.139261709Z {"level":"info","time":"2026-10-22T18:46:02Z","message":"storage engines cleanup completed"}
+2026-10-22T18:46:02.139279639Z {"level":"info","time":"2026-10-22T18:46:02Z","message":"cleanup completed"}
+2026-10-22T18:46:02.139283949Z {"level":"info","time":"2026-10-22T18:46:02Z","message":"🏁 server stopped"}
+
+👉 Sugestão: 🔁 Reiniciar gateway. Só executo se você aprovar (vale 15 min).
+```

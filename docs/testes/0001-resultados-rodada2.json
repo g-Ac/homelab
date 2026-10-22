@@ -1,0 +1,43 @@
+{
+  "inicio": "2026-10-22T15:30:15",
+  "fim": "2026-10-22T15:54:03",
+  "M6_execucoes_durante_teste": 0,
+  "cenarios": [
+    {
+      "id": "F5",
+      "segundos_ate_aviso": 176,
+      "texto": "🔴 CRÍTICO · srv não responde há 2 minutos\n\nO que aconteceu: O sistema não conseguiu coletar métricas do servidor 'srv' por 2 minutos.\nProvável causa: O alerta indica que o serviço não responde, mas a evidência mostra que o servidor 'srv' está ativo e respondendo a comandos.\nO que sugiro: A evidência contradiz o alerta; pode ser um falso alarme ou o problema já se resolveu.\n\n🤖 explicação: gemma4:e4b (IA local)\n\nEvidência (tailscale):\n<ip-tailscale>   ubuntu-server    g-Ac@       linux    active; direct <ipv6-publico>, tx 2170292 rx 12358500  \n\n# Funnel on:\n#     - https://<host>.ts.net",
+      "M1": true,
+      "M2": true,
+      "M3": true,
+      "acao_sugerida": null,
+      "M5": true,
+      "segundos_ate_resolvido": 285,
+      "M7": true
+    },
+    {
+      "id": "F6",
+      "segundos_ate_aviso": 180,
+      "texto": "🔴 CRÍTICO · ollama (srv) fora do ar\n\nA checagem HTTP de http://<ip-tailscale>:11434/api/version falha há 2 minutos.\n\n⚙️ IA indisponível (HTTPError); mensagem montada só pelas regras.\n\nEvidência (container ollama):\nollama | Exited (0) 2 minutes ago | 2b8eecdb85aa\n2026-10-22T18:36:16.317592616Z [GIN] 2026/10/22 - 18:36:16 | 200 |       46.49µs |    <ip-tailscale> | GET      \"/api/version\"\n2026-10-22T18:36:46.324421904Z [GIN] 2026/10/22 - 18:36:46 | 200 |       45.96µs |    <ip-tailscale> | GET      \"/api/version\"\n2026-10-22T18:37:16.318481363Z [GIN] 2026/10/22 - 18:37:16 | 200 |       30.12µs |    <ip-tailscale> | GET      \"/api/version\"\n2026-10-22T18:37:46.317556233Z [GIN] 2026/10/22 - 18:37:46 | 200 |       46.94µs |    <ip-tailscale> | GET      \"/api/version\"\n\n👉 Sugestão: 🔁 Reiniciar Ollama. Só executo se você aprovar (vale 15 min).",
+      "M1": true,
+      "M2": true,
+      "M4": true,
+      "acao_sugerida": "🔁 Reiniciar Ollama",
+      "M5": true,
+      "segundos_ate_resolvido": 293,
+      "M7": true
+    },
+    {
+      "id": "F7",
+      "segundos_ate_aviso": 181,
+      "texto": "🔴 CRÍTICO · gateway (srv) fora do ar\n\nA checagem HTTP de http://<ip-tailscale>:8080/health falha há 2 minutos.\n\n⚙️ IA indisponível (URLError); mensagem montada só pelas regras.\n\nEvidência (container bifrost):\nbifrost | Exited (0) 2 minutes ago | fe323e244998\n2026-10-22T18:46:02.129956415Z {\"level\":\"info\",\"time\":\"2026-10-22T18:46:02Z\",\"message\":\"log cleanup routine stopped\"}\n2026-10-22T18:46:02.139261709Z {\"level\":\"info\",\"time\":\"2026-10-22T18:46:02Z\",\"message\":\"storage engines cleanup completed\"}\n2026-10-22T18:46:02.139279639Z {\"level\":\"info\",\"time\":\"2026-10-22T18:46:02Z\",\"message\":\"cleanup completed\"}\n2026-10-22T18:46:02.139283949Z {\"level\":\"info\",\"time\":\"2026-10-22T18:46:02Z\",\"message\":\"🏁 server stopped\"}\n\n👉 Sugestão: 🔁 Reiniciar gateway. Só executo se você aprovar (vale 15 min).",
+      "M1": true,
+      "M2": true,
+      "M4": true,
+      "acao_sugerida": "🔁 Reiniciar gateway",
+      "M5": true,
+      "segundos_ate_resolvido": 294,
+      "M7": true
+    }
+  ]
+}
