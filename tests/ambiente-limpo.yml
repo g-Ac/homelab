@@ -1,0 +1,16 @@
+# Instância LIMPA do Bifrost para provar que o teste de aceitação passa do zero (issue #12):
+# mesma imagem, mesmo config.json e .env, mas volume novo (sem logs, limites ou orçamento gastos),
+# nome e porta próprios. Usa o sem-pensar e o Ollama já no ar na rede "ia".
+#
+#   cd ~/stacks/bifrost
+#   docker compose -p aceitacao-limpa -f compose.yml -f ~/homelab-tests/ambiente-limpo.yml up -d --no-deps bifrost
+#   # o Bifrost roda como uid 1000 e o volume novo nasce do root: ajuste o dono e religue
+#   docker run --rm -v aceitacao-limpa_bifrost-data:/n alpine:3.20 chown 1000:0 /n && docker restart bifrost-limpo
+#   python3 ~/homelab-tests/aceitacao_etapa1.py --gateway http://127.0.0.1:18080 --fallback --queda --overhead
+#   docker compose -p aceitacao-limpa -f compose.yml -f ~/homelab-tests/ambiente-limpo.yml down -v
+services:
+  bifrost:
+    container_name: bifrost-limpo
+    ports: !override
+      - "127.0.0.1:18080:8080"
+    depends_on: !override []

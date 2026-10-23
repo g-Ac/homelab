@@ -24,6 +24,23 @@ A proposta é mostrar que dá para montar uma plataforma de IA séria sem nuvem 
 | 🛟 **Agente SRE** | Alerta → diagnóstico por SSH preso a *forced command* (catálogo fechado) → explicação da IA local → botão de aprovação no Telegram → ação → conferência independente. Com a IA fora, o aviso sai montado por regras ([ADR 0006](docs/decisoes/0006-monitoramento-agente-sre.md)) |
 | 🧪 **Benchmark pré-registrado** | 4 modelos locais; 2 GO. Padrão `gemma4:e4b`: 96% em alertas, 97% em extração, 74 tokens/s. Modelos de 8–9B não cabem e não acertam mais ([resultados](docs/benchmarks/0001-resultados.md)) |
 
+## Demo
+
+Teste de aceitação da Etapa 1 rodando **do zero**, numa instância limpa do gateway (24 verificações;
+os ~3 min reais estão acelerados):
+
+![Teste de aceitação da Etapa 1 rodando no srv: 24 verificações passam](docs/demo/aceitacao.gif)
+
+O painel do Bifrost logo depois, com os pedidos do teste: custo-sombra e volume no dashboard, e o
+log **sem o conteúdo** das mensagens (coluna *Message* vazia):
+
+| Dashboard | Logs sem conteúdo |
+|---|---|
+| ![Dashboard do Bifrost](docs/demo/painel-dashboard.png) | ![Logs do Bifrost sem o conteúdo das mensagens](docs/demo/painel-logs.png) |
+
+Reproduzir: [`tests/ambiente-limpo.yml`](tests/ambiente-limpo.yml) sobe a instância limpa e
+[`tests/gravar_demo.py`](tests/gravar_demo.py) grava o terminal em asciicast (GIF via `agg`).
+
 ## Arquitetura
 
 ```mermaid

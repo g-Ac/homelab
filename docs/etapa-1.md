@@ -85,7 +85,10 @@ o número no painel é **quanto o mesmo uso custaria na nuvem**. Não é gasto r
 
 ## Resultado do teste de aceitação
 
-[`tests/aceitacao_etapa1.py`](../tests/aceitacao_etapa1.py) `--fallback --overhead --queda`, rodado no srv em 2026-10-23 (após o proxy `sem-pensar`, #13):
+[`tests/aceitacao_etapa1.py`](../tests/aceitacao_etapa1.py) `--fallback --overhead --queda`, rodado no srv em 2026-10-23 (após o proxy `sem-pensar`, #13).
+No mesmo dia a suíte passou **do zero** numa instância limpa do Bifrost (volume novo, sem logs,
+limites nem orçamento gastos; [`tests/ambiente-limpo.yml`](../tests/ambiente-limpo.yml)), com o
+mesmo 24/24 — gravação em [`docs/demo/`](demo/) e no README:
 
 ```text
 [PASSA ] inferência sem chave é recusada — HTTP 401
@@ -118,6 +121,17 @@ o número no painel é **quanto o mesmo uso custaria na nuvem**. Não é gasto r
 
 O fallback é testado com **falha real**: a tag do gemma4 é removida do Ollama e restaurada no fim,
 e na queda total o container do Ollama é parado e religado.
+
+## Demo
+
+![Teste de aceitação rodando do zero na instância limpa](demo/aceitacao.gif)
+
+| Dashboard logo após o teste | Logs: coluna *Message* vazia (conteúdo não guardado) |
+|---|---|
+| ![Dashboard do Bifrost](demo/painel-dashboard.png) | ![Logs do Bifrost](demo/painel-logs.png) |
+
+Gravado com [`tests/gravar_demo.py`](../tests/gravar_demo.py) (asciicast só com biblioteca padrão)
+e convertido com `agg`; capturas por Playwright headless no srv. Nada roda no Pi.
 
 ## O que aprendemos
 

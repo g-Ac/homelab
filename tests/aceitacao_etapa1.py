@@ -2,8 +2,10 @@
 """Teste de aceitação da Etapa 1 (gateway). Roda no srv, só biblioteca padrão.
 
 Uso:
-    python3 aceitacao_etapa1.py [--env ~/stacks/bifrost/.env] [--fallback] [--overhead]
+    python3 aceitacao_etapa1.py [--env ~/stacks/bifrost/.env] [--fallback] [--overhead] [--queda] [--gateway URL]
 
+--gateway   URL do gateway (padrão http://127.0.0.1:8080); use com tests/ambiente-limpo.yml para
+            provar que a suíte passa do zero numa instância limpa (issue #12)
 --fallback  remove temporariamente a tag do gemma4 no Ollama para provar o fallback (restaura no fim)
 --overhead  mede o tempo extra do gateway (critério na issue #12)
 --queda     para o container do Ollama para provar o failover para a nuvem e a falha fechada (religa no fim)
@@ -73,12 +75,15 @@ def erro(d):
 
 
 def main():
+    global GW
     ap = argparse.ArgumentParser()
     ap.add_argument("--env", default="~/stacks/bifrost/.env")
     ap.add_argument("--fallback", action="store_true")
     ap.add_argument("--overhead", action="store_true")
     ap.add_argument("--queda", action="store_true")
+    ap.add_argument("--gateway", default=GW)
     a = ap.parse_args()
+    GW = a.gateway.rstrip("/")
     env = ler_env(a.env)
     inicio = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
     admin = "Basic " + base64.b64encode(f"{env['BIFROST_ADMIN_USERNAME']}:{env['BIFROST_ADMIN_PASSWORD']}".encode()).decode()
