@@ -7,6 +7,7 @@ ligado à rede Docker externa `ia` (`docker network create ia`).
 |---|---|---|
 | [`ollama/`](ollama/) | Modelos locais na GPU | 11434 (localhost + Tailscale) |
 | [`bifrost/`](bifrost/) | Gateway único de IA (ADR 0004) | 8080 (localhost + Tailscale) |
+| [`bifrost/sem-pensar/`](bifrost/sem-pensar/) | Proxy Bifrost → Ollama que impõe "sem pensar" por padrão (ADR 0007); sobe junto com o Bifrost | nenhuma (só rede `ia`) |
 
 Regras:
 

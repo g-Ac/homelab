@@ -107,6 +107,16 @@ def main():
     registrar("reasoning_effort='none' desliga o 'pensar' do qwen", s == 200 and saida is not None and saida <= 10,
               f"{saida} tokens de saída em {t:.1f} s")
 
+    # #13: o gateway impõe "sem pensar" por padrão (proxy sem-pensar); a escolha do cliente é preservada
+    s, d, t = chat(env["VK_PRIVADO"], "ollama/qwen3.5:4b")
+    saida = (d.get("usage") or {}).get("completion_tokens")
+    registrar("sem reasoning_effort, o gateway impõe 'none' ao qwen (#13)",
+              s == 200 and saida is not None and saida <= 10, f"{saida} tokens de saída em {t:.1f} s")
+    s, d, t = chat(env["VK_PRIVADO"], "ollama/qwen3.5:4b", reasoning_effort="high")
+    saida = (d.get("usage") or {}).get("completion_tokens")
+    registrar("reasoning_effort='high' do cliente é preservado (qwen continua pensando)",
+              s == 200 and saida is not None and saida > 10, f"{saida} tokens de saída em {t:.1f} s")
+
     # 3. Fallback real (opcional: mexe no Ollama)
     if a.fallback:
         ollama("cp", "gemma4:e4b", "aceitacao-backup/gemma4:e4b")
@@ -128,7 +138,7 @@ def main():
     codigos = [chat(env["VK_TESTE_LIMITE"], "local")[0] for _ in range(5)]
     registrar("limite de 3 req/min bloqueia com 429", 429 in codigos and codigos.count(200) <= 3, f"códigos {codigos}")
     codigos = []
-    for _ in range(20):
+    for _ in range(30):  # US$ 0,0005 / US$ 0,000025 por chamada = 20 aceitas; a 21ª deve ser barrada
         s, _, _ = chat(env["VK_TESTE_ORCAMENTO"], "local")
         codigos.append(s)
         if s != 200:

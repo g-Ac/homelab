@@ -13,9 +13,25 @@ services:
       - ./config.json:/app/data/config.json:ro
       - bifrost-data:/app/data/store
     networks: [ia]
+    depends_on: [sem-pensar]
     read_only: true
     tmpfs:
       - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
+  # Proxy entre o Bifrost e o Ollama: impõe reasoning_effort "none" quando o cliente não
+  # escolhe (issue #13, ADR 0007). Só na rede "ia"; nenhuma porta publicada; sem segredo.
+  sem-pensar:
+    build: ./sem-pensar
+    image: homelab/sem-pensar:local
+    container_name: sem-pensar
+    restart: unless-stopped
+    environment:
+      - SEM_PENSAR_UPSTREAM=http://ollama:11434
+    networks: [ia]
+    read_only: true
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
