@@ -1,0 +1,13 @@
+[Unit]
+Description=Métricas do coletor de liquidações para o node_exporter (homelab)
+
+[Service]
+Type=oneshot
+# Dono do banco do coletor; a pasta do textfile tem ACL de escrita para ele (ver docs).
+User=gac
+ExecStart=/usr/local/lib/homelab/coletor-liquidacoes-metricas.sh
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/node_exporter/textfile /home/gac/stacks/coletor-liquidacoes/dados
+ProtectHome=read-only
+PrivateTmp=yes

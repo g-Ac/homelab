@@ -1,0 +1,34 @@
+# Testes das regras do coletor de liquidações: promtool test rules monitoramento/prometheus/testes-coletor.yml
+rule_files: [regras/alertas.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      # batimento para de avançar no minuto 0 (coletor travado)
+      - series: 'homelab_coletor_liq_ultimo_batimento_segundos{maquina="srv"}'
+        values: '0x15'
+      - series: 'homelab_coletor_liq_conexoes_conectadas{maquina="srv",fonte="bybit"}'
+        values: '5 5 4x14'
+      - series: 'homelab_coletor_liq_conexoes_total{maquina="srv",fonte="bybit"}'
+        values: '5x15'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: ColetorLiquidacoesParado
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: ColetorLiquidacoesParado
+        exp_alerts:
+          - exp_labels: { maquina: srv, gravidade: critico }
+            exp_annotations:
+              resumo: "Coletor de liquidações parado em srv"
+              descricao: "Nenhum batimento há mais de 5 minutos. Liquidação não tem histórico público: cada minuto parado é dado perdido para sempre."
+      - eval_time: 8m
+        alertname: ColetorLiquidacoesDesconectado
+        exp_alerts: []
+      - eval_time: 13m
+        alertname: ColetorLiquidacoesDesconectado
+        exp_alerts:
+          - exp_labels: { maquina: srv, fonte: bybit, gravidade: atencao }
+            exp_annotations:
+              resumo: "Coletor de liquidações com conexão caída (bybit)"
+              descricao: "4 conexões conectadas, menos que o total, há 10 minutos. Parte das moedas está sem coleta."

@@ -120,3 +120,29 @@ groups:
         annotations:
           resumo: "Subtensão detectada no Pi"
           descricao: "A fonte não está entregando tensão suficiente (vcgencmd get_throttled). Causa comum de travamentos e corrupção de disco."
+
+  - name: coletor-liquidacoes
+    rules:
+      - alert: ColetorLiquidacoesParado
+        expr: time() - homelab_coletor_liq_ultimo_batimento_segundos > 300
+        for: 2m
+        labels: { gravidade: critico }
+        annotations:
+          resumo: "Coletor de liquidações parado em {{ $labels.maquina }}"
+          descricao: "Nenhum batimento há mais de 5 minutos. Liquidação não tem histórico público: cada minuto parado é dado perdido para sempre."
+
+      - alert: ColetorLiquidacoesDesconectado
+        expr: homelab_coletor_liq_conexoes_conectadas < homelab_coletor_liq_conexoes_total
+        for: 10m
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "Coletor de liquidações com conexão caída ({{ $labels.fonte }})"
+          descricao: "{{ $value }} conexões conectadas, menos que o total, há 10 minutos. Parte das moedas está sem coleta."
+
+      - alert: MetricasColetorParadas
+        expr: time() - node_textfile_mtime_seconds{file=~".*coletor-liquidacoes.prom"} > 300
+        for: 5m
+        labels: { gravidade: atencao }
+        annotations:
+          resumo: "Métricas do coletor de liquidações paradas em {{ $labels.maquina }}"
+          descricao: "O arquivo coletor-liquidacoes.prom não é atualizado há mais de 5 minutos (timer coletor-liquidacoes-metricas)."

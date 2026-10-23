@@ -138,7 +138,8 @@ def redigir(texto):
 
 # --- IA via gateway ------------------------------------------------------------------------------
 
-DISPONIBILIDADE = {"ServicoHttpFora", "ServicoSystemdParado", "MaquinaFora", "MetricasGpuParadas", "GpuSemDriver"}
+DISPONIBILIDADE = {"ServicoHttpFora", "ServicoSystemdParado", "MaquinaFora", "MetricasGpuParadas", "GpuSemDriver",
+                   "ColetorLiquidacoesParado", "ColetorLiquidacoesDesconectado", "MetricasColetorParadas"}
 NEGA_REGRA = ["falso alarme", "alarme falso", "contradiz", "nao confirma", "nao se confirma", "ja se resolveu",
               "ja se recuperou", "nao ha problema"]
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Exporta a saúde do coletor de liquidações a cada minuto (homelab)
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=5
+
+[Install]
+WantedBy=timers.target
